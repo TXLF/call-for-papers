@@ -1,2 +1,6 @@
 /target
 .idea/
+
+# Environment files
+.env
+.env.local
