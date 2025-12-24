@@ -4,3 +4,8 @@
 # Environment files
 .env
 .env.local
+
+# Frontend build artifacts
+frontend/dist
+frontend/target
+frontend/.trunk
