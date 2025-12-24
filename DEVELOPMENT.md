@@ -6,12 +6,72 @@ This guide explains how to set up and run the Call for Papers application for de
 
 ### Backend
 - Rust toolchain (1.70 or later)
-- PostgreSQL (12 or later)
+- PostgreSQL (12 or later) OR Podman/Docker
 
 ### Frontend
 - Rust toolchain (1.70 or later)
 - `wasm32-unknown-unknown` target
 - Trunk build tool
+
+## Development Environment Options
+
+You have two options for setting up your development environment:
+
+### Option A: Podman Compose (Recommended for Quick Setup)
+
+Use podman compose to run PostgreSQL in a container while developing the Rust backend and frontend on your host machine. This provides the fastest development experience with hot-reloading.
+
+**Prerequisites:**
+- Podman or Docker installed
+
+**Setup:**
+```bash
+# Start PostgreSQL
+podman-compose up -d
+
+# Or with docker-compose
+docker-compose up -d
+
+# Verify PostgreSQL is running
+podman-compose ps
+```
+
+This starts a PostgreSQL container on `localhost:5432` with:
+- Database: `call_for_papers`
+- Username: `postgres`
+- Password: `postgres`
+
+The database data persists in a named volume, so stopping the container won't delete your data.
+
+**Useful commands:**
+```bash
+# View logs
+podman-compose logs -f postgres
+
+# Stop PostgreSQL
+podman-compose down
+
+# Stop and remove data (WARNING: deletes database)
+podman-compose down -v
+
+# Restart PostgreSQL
+podman-compose restart postgres
+```
+
+**Optional: pgAdmin**
+
+To enable pgAdmin for database management, uncomment the `pgadmin` service in `compose.yaml` and restart:
+```bash
+podman-compose up -d
+```
+
+Access pgAdmin at http://localhost:5050 with:
+- Email: admin@cfp.local
+- Password: admin
+
+### Option B: Native PostgreSQL Installation
+
+Install PostgreSQL directly on your system. See the "Setup PostgreSQL" section below.
 
 ## Initial Setup
 
@@ -152,26 +212,63 @@ When using `trunk serve`:
 
 ## Building for Production
 
-### 1. Build Frontend
+### Option 1: Native Build
+
+#### 1. Build Frontend
 ```bash
 cd frontend
 trunk build --release
 cd ..
 ```
 
-### 2. Build Backend
+#### 2. Build Backend
 ```bash
 cargo build --release
 ```
 
 The release binary will be in `target/release/call-for-papers`
 
-### 3. Deploy
+#### 3. Deploy
 - Copy the binary
 - Copy the `migrations/` directory
 - Copy the `frontend/dist/` directory
 - Set environment variables
 - Run the binary
+
+### Option 2: Container Build
+
+Build and run the entire application in containers using the provided Dockerfile:
+
+```bash
+# Build the container image
+podman build -t call-for-papers:latest .
+
+# Run with existing PostgreSQL from compose.yaml
+podman run -d \
+  --name cfp-app \
+  -p 8080:8080 \
+  -e DATABASE_URL=postgres://postgres:postgres@host.containers.internal:5432/call_for_papers \
+  call-for-papers:latest
+
+# Or add to compose.yaml for a complete containerized setup
+```
+
+To add the backend to `compose.yaml`, you can uncomment or add:
+```yaml
+  backend:
+    build: .
+    container_name: cfp-backend
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/call_for_papers
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+```
 
 ## Testing
 

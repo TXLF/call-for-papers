@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Build artifacts
+target/
+frontend/target/
+frontend/dist/
+*.wasm
+*.js.map
+
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Documentation (comment out if you want these in the image)
+*.md
+!migrations/*.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Testing
+coverage/
+*.profdata
+
+# MacOS
+.DS_Store
+
+# Beads issue tracking
+.beads/
+.claude/
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
