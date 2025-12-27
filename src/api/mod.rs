@@ -2,7 +2,8 @@ pub mod middleware;
 
 use axum::{
     extract::State,
-    routing::{get, post},
+    middleware as axum_middleware,
+    routing::{delete, get, post, put},
     Router,
 };
 use sqlx::PgPool;
@@ -19,13 +20,27 @@ pub struct AppState {
 pub fn create_router(db: PgPool, config: Config) -> Router {
     let state = AppState { db, config };
 
-    // API routes
+    // Protected routes (require authentication)
+    let protected_routes = Router::new()
+        // Talk routes
+        .route("/talks", post(handlers::create_talk))
+        .route("/talks/mine", get(handlers::get_my_talks))
+        .route("/talks/:id", get(handlers::get_talk))
+        .route("/talks/:id", put(handlers::update_talk))
+        .route("/talks/:id", delete(handlers::delete_talk))
+        .layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::auth_middleware,
+        ));
+
+    // Public API routes
     let api_routes = Router::new()
         .route("/health", get(health_check))
         .route("/health/db", get(health_check_db))
         // Authentication routes
         .route("/auth/register", post(handlers::register))
         .route("/auth/login", post(handlers::login))
+        .merge(protected_routes)
         .with_state(state);
 
     // Check if frontend dist directory exists
