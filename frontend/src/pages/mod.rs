@@ -1,4 +1,6 @@
 pub mod home;
 pub mod login;
+pub mod my_talks;
 pub mod not_found;
 pub mod signup;
+pub mod submit_talk;
