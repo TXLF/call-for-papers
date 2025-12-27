@@ -35,6 +35,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    // Create uploads directory if it doesn't exist
+    tracing::info!("Ensuring upload directory exists: {}", config.upload_dir);
+    std::fs::create_dir_all(&config.upload_dir)?;
+
     // Create API router with database pool and config
     let app = api::create_router(pool, config.clone());
 

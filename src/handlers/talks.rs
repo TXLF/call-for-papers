@@ -1,9 +1,10 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Multipart, Path, State},
     http::StatusCode,
     Extension, Json,
 };
 use chrono::Utc;
+use std::path::PathBuf;
 use uuid::Uuid;
 
 use crate::{
@@ -311,4 +312,162 @@ pub async fn delete_talk(
         })?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// Upload slides for a talk
+pub async fn upload_slides(
+    State(state): State<AppState>,
+    Extension(user): Extension<User>,
+    Path(talk_id): Path<Uuid>,
+    mut multipart: Multipart,
+) -> Result<Json<TalkResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // First, verify the talk exists and user owns it
+    let talk = sqlx::query_as::<_, Talk>(
+        r#"
+        SELECT * FROM talks
+        WHERE id = $1
+        "#,
+    )
+    .bind(talk_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error fetching talk: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to fetch talk")),
+        )
+    })?;
+
+    let talk = talk.ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new("Talk not found")),
+        )
+    })?;
+
+    // Verify ownership
+    if talk.speaker_id != user.id {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(ErrorResponse::new(
+                "You can only upload slides for your own talk submissions",
+            )),
+        ));
+    }
+
+    // Process the multipart form data
+    let mut file_path: Option<String> = None;
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|e| {
+            tracing::error!("Error reading multipart field: {}", e);
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::new("Invalid file upload")),
+            )
+        })?
+    {
+        let name = field.name().unwrap_or("").to_string();
+        if name != "slides" {
+            continue;
+        }
+
+        let file_name = field
+            .file_name()
+            .ok_or_else(|| {
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorResponse::new("No filename provided")),
+                )
+            })?
+            .to_string();
+
+        // Validate file extension
+        let allowed_extensions = ["pdf", "ppt", "pptx", "key", "odp"];
+        let path_buf = PathBuf::from(&file_name);
+        let extension = path_buf
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("");
+
+        if !allowed_extensions.contains(&extension.to_lowercase().as_str()) {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::new(
+                    "Invalid file type. Allowed: pdf, ppt, pptx, key, odp",
+                )),
+            ));
+        }
+
+        // Generate unique filename
+        let unique_name = format!("{}_{}", Uuid::new_v4(), file_name);
+        let file_path_buf = PathBuf::from(&state.config.upload_dir).join(&unique_name);
+
+        // Read file data
+        let data = field.bytes().await.map_err(|e| {
+            tracing::error!("Error reading file data: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to read file")),
+            )
+        })?;
+
+        // Validate file size (max 50MB)
+        const MAX_FILE_SIZE: usize = 50 * 1024 * 1024;
+        if data.len() > MAX_FILE_SIZE {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::new("File size exceeds 50MB limit")),
+            ));
+        }
+
+        // Save file to disk
+        tokio::fs::write(&file_path_buf, data)
+            .await
+            .map_err(|e| {
+                tracing::error!("Error saving file: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to save file")),
+                )
+            })?;
+
+        file_path = Some(format!("/uploads/{}", unique_name));
+        break;
+    }
+
+    let slides_url = file_path.ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse::new("No file uploaded")),
+        )
+    })?;
+
+    // Update the talk with the slides URL
+    let updated_talk = sqlx::query_as::<_, Talk>(
+        r#"
+        UPDATE talks
+        SET slides_url = $1,
+            updated_at = $2
+        WHERE id = $3
+        RETURNING *
+        "#,
+    )
+    .bind(&slides_url)
+    .bind(Utc::now())
+    .bind(talk_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error updating talk: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to update talk")),
+        )
+    })?;
+
+    Ok(Json(TalkResponse::from(updated_talk)))
 }

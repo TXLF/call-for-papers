@@ -9,3 +9,6 @@
 frontend/dist
 frontend/target
 frontend/.trunk
+
+# Uploaded files
+uploads/

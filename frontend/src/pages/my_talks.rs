@@ -95,6 +95,19 @@ pub fn my_talks() -> Html {
                                                     html! {}
                                                 }
                                             }
+                                            {
+                                                if let Some(slides_url) = &talk.slides_url {
+                                                    html! {
+                                                        <div class="talk-slides">
+                                                            <a href={slides_url.clone()} target="_blank" class="slides-link">
+                                                                { "📄 View Slides" }
+                                                            </a>
+                                                        </div>
+                                                    }
+                                                } else {
+                                                    html! {}
+                                                }
+                                            }
                                             <div class="talk-meta">
                                                 <small>{ format!("Submitted: {}", talk.submitted_at) }</small>
                                             </div>

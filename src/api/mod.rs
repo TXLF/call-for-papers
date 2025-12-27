@@ -18,6 +18,7 @@ pub struct AppState {
 }
 
 pub fn create_router(db: PgPool, config: Config) -> Router {
+    let upload_dir = config.upload_dir.clone();
     let state = AppState { db, config };
 
     // Protected routes (require authentication)
@@ -28,6 +29,7 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/talks/:id", get(handlers::get_talk))
         .route("/talks/:id", put(handlers::update_talk))
         .route("/talks/:id", delete(handlers::delete_talk))
+        .route("/talks/:id/upload-slides", post(handlers::upload_slides))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth_middleware,
@@ -43,6 +45,9 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .merge(protected_routes)
         .with_state(state);
 
+    // Serve uploaded files
+    let uploads_service = ServeDir::new(&upload_dir);
+
     // Check if frontend dist directory exists
     let frontend_path = std::path::Path::new("frontend/dist");
 
@@ -53,10 +58,13 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
 
         Router::new()
             .nest("/api", api_routes)
+            .nest_service("/uploads", uploads_service)
             .fallback_service(serve_dir)
     } else {
         tracing::warn!("Frontend dist directory not found, serving API only");
-        api_routes
+        Router::new()
+            .nest("/api", api_routes)
+            .nest_service("/uploads", uploads_service)
     }
 }
 

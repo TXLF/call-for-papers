@@ -1,11 +1,11 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
-use web_sys::{HtmlInputElement, HtmlTextAreaElement};
+use web_sys::{File, HtmlInputElement, HtmlTextAreaElement};
 
 use crate::{
     app::Route,
     services::talks::TalkService,
-    types::CreateTalkRequest,
+    types::{CreateTalkRequest, Talk},
 };
 
 #[function_component(SubmitTalk)]
@@ -14,9 +14,12 @@ pub fn submit_talk() -> Html {
     let title = use_state(|| String::new());
     let short_summary = use_state(|| String::new());
     let long_description = use_state(|| String::new());
+    let slides_file = use_state(|| None::<File>);
+    let created_talk = use_state(|| None::<Talk>);
     let error = use_state(|| None::<String>);
     let success = use_state(|| false);
     let loading = use_state(|| false);
+    let uploading_slides = use_state(|| false);
 
     let title_clone = title.clone();
     let on_title_change = Callback::from(move |e: Event| {
@@ -36,13 +39,26 @@ pub fn submit_talk() -> Html {
         long_description_clone.set(textarea.value());
     });
 
+    let slides_file_clone = slides_file.clone();
+    let on_file_change = Callback::from(move |e: Event| {
+        let input: HtmlInputElement = e.target_unchecked_into();
+        if let Some(files) = input.files() {
+            if let Some(file) = files.get(0) {
+                slides_file_clone.set(Some(file));
+            }
+        }
+    });
+
     let on_submit = {
         let title = title.clone();
         let short_summary = short_summary.clone();
         let long_description = long_description.clone();
+        let slides_file = slides_file.clone();
+        let created_talk = created_talk.clone();
         let error = error.clone();
         let success = success.clone();
         let loading = loading.clone();
+        let uploading_slides = uploading_slides.clone();
 
         Callback::from(move |e: SubmitEvent| {
             e.prevent_default();
@@ -50,9 +66,12 @@ pub fn submit_talk() -> Html {
             let title_val = (*title).clone();
             let short_summary_val = (*short_summary).clone();
             let long_description_val = (*long_description).clone();
+            let slides_file_opt = (*slides_file).clone();
+            let created_talk = created_talk.clone();
             let error = error.clone();
             let success = success.clone();
             let loading = loading.clone();
+            let uploading_slides = uploading_slides.clone();
 
             if title_val.trim().is_empty() || short_summary_val.trim().is_empty() {
                 error.set(Some("Title and short summary are required".to_string()));
@@ -82,9 +101,30 @@ pub fn submit_talk() -> Html {
                 };
 
                 match TalkService::create_talk(request).await {
-                    Ok(_) => {
-                        success.set(true);
+                    Ok(talk) => {
                         loading.set(false);
+
+                        // Upload slides if file was selected
+                        if let Some(file) = slides_file_opt {
+                            uploading_slides.set(true);
+                            match TalkService::upload_slides(&talk.id, file).await {
+                                Ok(updated_talk) => {
+                                    created_talk.set(Some(updated_talk));
+                                    success.set(true);
+                                    uploading_slides.set(false);
+                                }
+                                Err(e) => {
+                                    // Talk was created but slide upload failed
+                                    created_talk.set(Some(talk));
+                                    error.set(Some(format!("Talk created, but slide upload failed: {}", e)));
+                                    success.set(true);
+                                    uploading_slides.set(false);
+                                }
+                            }
+                        } else {
+                            created_talk.set(Some(talk));
+                            success.set(true);
+                        }
                     }
                     Err(e) => {
                         error.set(Some(e));
@@ -112,6 +152,19 @@ pub fn submit_talk() -> Html {
                         html! {
                             <div class="success-message">
                                 <p>{ "Your talk has been submitted successfully!" }</p>
+                                {
+                                    if *uploading_slides {
+                                        html! { <p>{ "Uploading slides..." }</p> }
+                                    } else if let Some(talk) = (*created_talk).as_ref() {
+                                        if talk.slides_url.is_some() {
+                                            html! { <p>{ "Slides uploaded successfully!" }</p> }
+                                        } else {
+                                            html! {}
+                                        }
+                                    } else {
+                                        html! {}
+                                    }
+                                }
                                 <button onclick={on_view_talks}>{ "View My Talks" }</button>
                             </div>
                         }
@@ -169,6 +222,34 @@ pub fn submit_talk() -> Html {
                                     />
                                 </div>
 
+                                <div class="form-group">
+                                    <label for="slides">
+                                        { "Slides " }
+                                        <span class="optional">{ "(Optional)" }</span>
+                                    </label>
+                                    <input
+                                        type="file"
+                                        id="slides"
+                                        onchange={on_file_change}
+                                        disabled={*loading}
+                                        accept=".pdf,.ppt,.pptx,.key,.odp"
+                                    />
+                                    <small class="file-note">
+                                        { "Accepted formats: PDF, PPT, PPTX, KEY, ODP (max 50MB)" }
+                                    </small>
+                                    {
+                                        if let Some(file) = (*slides_file).as_ref() {
+                                            html! {
+                                                <small class="file-selected">
+                                                    { format!("Selected: {}", file.name()) }
+                                                </small>
+                                            }
+                                        } else {
+                                            html! {}
+                                        }
+                                    }
+                                </div>
+
                                 {
                                     if let Some(err) = (*error).as_ref() {
                                         html! {
@@ -181,8 +262,16 @@ pub fn submit_talk() -> Html {
                                     }
                                 }
 
-                                <button type="submit" disabled={*loading}>
-                                    { if *loading { "Submitting..." } else { "Submit Talk" } }
+                                <button type="submit" disabled={*loading || *uploading_slides}>
+                                    {
+                                        if *loading {
+                                            "Submitting..."
+                                        } else if *uploading_slides {
+                                            "Uploading slides..."
+                                        } else {
+                                            "Submit Talk"
+                                        }
+                                    }
                                 </button>
                             </form>
                         }

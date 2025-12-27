@@ -7,6 +7,7 @@ pub struct Config {
     pub server_port: u16,
     pub jwt_secret: String,
     pub jwt_expiry_hours: i64,
+    pub upload_dir: String,
 }
 
 impl Config {
@@ -32,12 +33,16 @@ impl Config {
             .parse()
             .expect("JWT_EXPIRY_HOURS must be a valid number");
 
+        let upload_dir = std::env::var("UPLOAD_DIR")
+            .unwrap_or_else(|_| "./uploads".to_string());
+
         Ok(Config {
             database_url,
             server_host,
             server_port,
             jwt_secret,
             jwt_expiry_hours,
+            upload_dir,
         })
     }
 }

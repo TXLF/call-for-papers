@@ -127,4 +127,38 @@ impl TalkService {
             Err(error.error)
         }
     }
+
+    pub async fn upload_slides(id: &str, file: web_sys::File) -> Result<Talk, String> {
+        let token = AuthService::get_token().ok_or("Not authenticated")?;
+
+        // Create FormData
+        let form_data = web_sys::FormData::new()
+            .map_err(|e| format!("Failed to create FormData: {:?}", e))?;
+
+        form_data
+            .append_with_blob("slides", &file)
+            .map_err(|e| format!("Failed to append file: {:?}", e))?;
+
+        let response = Request::post(&format!("/api/talks/{}/upload-slides", id))
+            .header("Authorization", &format!("Bearer {}", token))
+            .body(form_data)
+            .map_err(|e| format!("Failed to create request: {}", e))?
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            let talk = response
+                .json::<Talk>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+            Ok(talk)
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
 }
