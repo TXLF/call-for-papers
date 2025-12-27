@@ -5,6 +5,8 @@ pub struct Config {
     pub database_url: String,
     pub server_host: String,
     pub server_port: u16,
+    pub jwt_secret: String,
+    pub jwt_expiry_hours: i64,
 }
 
 impl Config {
@@ -22,10 +24,20 @@ impl Config {
             .parse()
             .expect("SERVER_PORT must be a valid port number");
 
+        let jwt_secret = std::env::var("JWT_SECRET")
+            .expect("JWT_SECRET must be set in environment variables");
+
+        let jwt_expiry_hours = std::env::var("JWT_EXPIRY_HOURS")
+            .unwrap_or_else(|_| "24".to_string())
+            .parse()
+            .expect("JWT_EXPIRY_HOURS must be a valid number");
+
         Ok(Config {
             database_url,
             server_host,
             server_port,
+            jwt_secret,
+            jwt_expiry_hours,
         })
     }
 }

@@ -35,8 +35,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Create API router with database pool
-    let app = api::create_router(pool);
+    // Create API router with database pool and config
+    let app = api::create_router(pool, config.clone());
 
     // Start server
     let addr = format!("{}:{}", config.server_host, config.server_port);

@@ -1,1 +1,3 @@
-// Request handlers will be defined here
+pub mod auth;
+
+pub use auth::{register, login};
