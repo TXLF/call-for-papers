@@ -116,3 +116,34 @@ pub struct CreateRatingRequest {
     pub rating: i32,
     pub notes: Option<String>,
 }
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct TalkRatingStats {
+    pub talk_id: String,
+    pub talk_title: String,
+    pub speaker_name: String,
+    pub state: String,
+    pub average_rating: Option<f64>,
+    pub rating_count: i64,
+    pub ratings: Vec<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct RatingsStatisticsResponse {
+    pub total_talks: i64,
+    pub total_ratings: i64,
+    pub talks_with_ratings: i64,
+    pub talks_without_ratings: i64,
+    pub overall_average_rating: Option<f64>,
+    pub rating_distribution: RatingDistribution,
+    pub talk_stats: Vec<TalkRatingStats>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct RatingDistribution {
+    pub one_star: i64,
+    pub two_star: i64,
+    pub three_star: i64,
+    pub four_star: i64,
+    pub five_star: i64,
+}

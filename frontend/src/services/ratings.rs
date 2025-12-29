@@ -2,7 +2,7 @@ use gloo_net::http::Request;
 
 use crate::{
     services::auth::AuthService,
-    types::{CreateRatingRequest, ErrorResponse, Rating},
+    types::{CreateRatingRequest, ErrorResponse, Rating, RatingsStatisticsResponse},
 };
 
 pub struct RatingService;
@@ -106,6 +106,31 @@ impl RatingService {
 
         if response.ok() || response.status() == 204 {
             Ok(())
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
+
+    /// Get aggregated ratings statistics for all talks (organizer only)
+    pub async fn get_statistics() -> Result<RatingsStatisticsResponse, String> {
+        let token = AuthService::get_token().ok_or("Not authenticated")?;
+
+        let response = Request::get("/api/ratings/statistics")
+            .header("Authorization", &format!("Bearer {}", token))
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            let stats = response
+                .json::<RatingsStatisticsResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+            Ok(stats)
         } else {
             let error = response
                 .json::<ErrorResponse>()

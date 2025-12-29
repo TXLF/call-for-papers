@@ -4,7 +4,7 @@ use yew_router::prelude::*;
 use crate::components::{protected_route::ProtectedRoute, organizer_route::OrganizerRoute};
 use crate::pages::{
     home::Home, login::Login, my_talks::MyTalks, not_found::NotFound, signup::Signup,
-    submit_talk::SubmitTalk, organizer_talks::OrganizerTalks,
+    submit_talk::SubmitTalk, organizer_talks::OrganizerTalks, ratings_dashboard::RatingsDashboard,
 };
 use crate::services::auth::AuthService;
 
@@ -22,6 +22,8 @@ pub enum Route {
     MyTalks,
     #[at("/organizer/talks")]
     OrganizerTalks,
+    #[at("/organizer/ratings")]
+    RatingsDashboard,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -45,6 +47,11 @@ fn switch(routes: Route) -> Html {
         Route::OrganizerTalks => html! {
             <OrganizerRoute>
                 <OrganizerTalks />
+            </OrganizerRoute>
+        },
+        Route::RatingsDashboard => html! {
+            <OrganizerRoute>
+                <RatingsDashboard />
             </OrganizerRoute>
         },
         Route::NotFound => html! { <NotFound /> },
@@ -92,6 +99,7 @@ fn app_content() -> Html {
                             <Link<Route> to={Route::SubmitTalk}>{ "Submit Talk" }</Link<Route>>
                             if *is_organizer {
                                 <Link<Route> to={Route::OrganizerTalks}>{ "Review Talks" }</Link<Route>>
+                                <Link<Route> to={Route::RatingsDashboard}>{ "Ratings Dashboard" }</Link<Route>>
                             }
                             <button onclick={on_logout} class="logout-button">{ "Logout" }</button>
                         </>

@@ -51,6 +51,7 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/talks/:id/ratings", get(handlers::get_talk_ratings))
         .route("/talks/:id/rate/mine", get(handlers::get_my_rating))
         .route("/talks/:id/rate", delete(handlers::delete_rating))
+        .route("/ratings/statistics", get(handlers::get_ratings_statistics))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth_middleware,

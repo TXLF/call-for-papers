@@ -8,4 +8,4 @@ pub use user::User;
 pub use auth::{RegisterRequest, LoginRequest, AuthResponse, Claims};
 pub use talk::{Talk, TalkState, CreateTalkRequest, UpdateTalkRequest, TalkResponse, RespondToTalkRequest, TalkAction};
 pub use label::{Label, LabelResponse, CreateLabelRequest, UpdateLabelRequest, AddLabelToTalkRequest, TalkLabel};
-pub use rating::{Rating, CreateRatingRequest, UpdateRatingRequest, RatingResponse};
+pub use rating::{Rating, CreateRatingRequest, UpdateRatingRequest, RatingResponse, TalkRatingStats, RatingsStatisticsResponse, RatingDistribution};
