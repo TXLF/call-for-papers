@@ -12,7 +12,7 @@ use crate::{
     api::AppState,
     models::{
         auth::ErrorResponse, CreateTalkRequest, Label, LabelResponse, Talk, TalkResponse,
-        TalkState, UpdateTalkRequest, RespondToTalkRequest, TalkAction, User,
+        TalkState, UpdateTalkRequest, RespondToTalkRequest, TalkAction, ChangeStateRequest, User,
     },
 };
 
@@ -610,6 +610,82 @@ pub async fn respond_to_talk(
             Json(ErrorResponse::new("Failed to update talk state")),
         )
     })?;
+
+    Ok(Json(TalkResponse::from(updated_talk)))
+}
+
+/// Change talk state (organizer-only)
+pub async fn change_talk_state(
+    State(state): State<AppState>,
+    Path(talk_id): Path<Uuid>,
+    Json(payload): Json<ChangeStateRequest>,
+) -> Result<Json<TalkResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // Fetch the talk to verify existence and current state
+    let talk = sqlx::query_as::<_, Talk>(
+        r#"
+        SELECT * FROM talks
+        WHERE id = $1
+        "#,
+    )
+    .bind(talk_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error fetching talk: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to fetch talk")),
+        )
+    })?;
+
+    let talk = talk.ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new("Talk not found")),
+        )
+    })?;
+
+    // Validate state transition
+    if !talk.state.can_transition_to(&payload.new_state) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse::new(&format!(
+                "Invalid state transition: cannot move from {:?} to {:?}",
+                talk.state, payload.new_state
+            ))),
+        ));
+    }
+
+    // Update the talk state
+    let updated_talk = sqlx::query_as::<_, Talk>(
+        r#"
+        UPDATE talks
+        SET state = $1,
+            updated_at = $2
+        WHERE id = $3
+        RETURNING *
+        "#,
+    )
+    .bind(&payload.new_state)
+    .bind(Utc::now())
+    .bind(talk_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error updating talk state: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to update talk state")),
+        )
+    })?;
+
+    tracing::info!(
+        "Talk {} state changed from {:?} to {:?}{}",
+        talk_id,
+        talk.state,
+        payload.new_state,
+        payload.reason.as_ref().map(|r| format!(" (reason: {})", r)).unwrap_or_default()
+    );
 
     Ok(Json(TalkResponse::from(updated_talk)))
 }

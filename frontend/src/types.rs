@@ -94,6 +94,12 @@ pub struct RespondToTalkRequest {
 }
 
 #[derive(Debug, Serialize)]
+pub struct ChangeStateRequest {
+    pub new_state: TalkState,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct AddLabelToTalkRequest {
     pub label_ids: Vec<String>,
 }

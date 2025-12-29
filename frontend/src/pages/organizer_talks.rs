@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use crate::{
     components::{LabelBadge, RatingForm, RatingStars},
     services::{talks::TalkService, ratings::RatingService},
-    types::{Talk, Rating},
+    types::{Talk, Rating, TalkState, ChangeStateRequest},
 };
 
 #[function_component(OrganizerTalks)]
@@ -249,6 +249,96 @@ pub fn organizer_talks() -> Html {
                                             <div class="talk-meta">
                                                 <small>{ format!("Submitted: {}", talk.submitted_at) }</small>
                                             </div>
+
+                                            {
+                                                // State change actions for non-terminal states
+                                                if talk.state != TalkState::Accepted && talk.state != TalkState::Rejected {
+                                                    let talks_clone = talks.clone();
+                                                    let talk_id_for_state = talk_id.clone();
+                                                    let current_state = talk.state.clone();
+
+                                                    let on_state_change = {
+                                                        let talk_id = talk_id_for_state.clone();
+                                                        let talks = talks_clone.clone();
+
+                                                        Callback::from(move |new_state: TalkState| {
+                                                            let talk_id = talk_id.clone();
+                                                            let talks = talks.clone();
+
+                                                            spawn_local(async move {
+                                                                let request = ChangeStateRequest {
+                                                                    new_state: new_state.clone(),
+                                                                    reason: None,
+                                                                };
+
+                                                                match TalkService::change_state(&talk_id, request).await {
+                                                                    Ok(updated_talk) => {
+                                                                        // Update the talk in the list
+                                                                        let mut talks_list = (*talks).clone();
+                                                                        if let Some(talk) = talks_list.iter_mut().find(|t| t.id == talk_id) {
+                                                                            talk.state = updated_talk.state;
+                                                                            talk.updated_at = updated_talk.updated_at;
+                                                                        }
+                                                                        talks.set(talks_list);
+                                                                    }
+                                                                    Err(e) => {
+                                                                        web_sys::console::error_1(&format!("Failed to change state: {}", e).into());
+                                                                    }
+                                                                }
+                                                            });
+                                                        })
+                                                    };
+
+                                                    html! {
+                                                        <div class="state-actions">
+                                                            <h4>{ "Change Talk State" }</h4>
+                                                            <div class="action-buttons">
+                                                                {
+                                                                    match current_state {
+                                                                        TalkState::Submitted => html! {
+                                                                            <>
+                                                                                <button
+                                                                                    class="btn-accept"
+                                                                                    onclick={
+                                                                                        let on_change = on_state_change.clone();
+                                                                                        Callback::from(move |_| on_change.emit(TalkState::Pending))
+                                                                                    }
+                                                                                >
+                                                                                    { "Move to Pending" }
+                                                                                </button>
+                                                                                <button
+                                                                                    class="btn-decline"
+                                                                                    onclick={
+                                                                                        let on_change = on_state_change.clone();
+                                                                                        Callback::from(move |_| on_change.emit(TalkState::Rejected))
+                                                                                    }
+                                                                                >
+                                                                                    { "Reject" }
+                                                                                </button>
+                                                                            </>
+                                                                        },
+                                                                        TalkState::Pending => html! {
+                                                                            <button
+                                                                                class="btn-primary"
+                                                                                onclick={
+                                                                                    let on_change = on_state_change.clone();
+                                                                                    Callback::from(move |_| on_change.emit(TalkState::Submitted))
+                                                                                }
+                                                                                style="font-size: 0.9rem;"
+                                                                            >
+                                                                                { "Return to Submitted" }
+                                                                            </button>
+                                                                        },
+                                                                        _ => html! {}
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                } else {
+                                                    html! {}
+                                                }
+                                            }
 
                                             <div class="rating-section">
                                                 <h3>{ "Rate This Talk" }</h3>

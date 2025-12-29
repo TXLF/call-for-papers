@@ -2,7 +2,7 @@ use gloo_net::http::Request;
 
 use crate::{
     services::auth::AuthService,
-    types::{CreateTalkRequest, ErrorResponse, Talk, UpdateTalkRequest},
+    types::{CreateTalkRequest, ErrorResponse, Talk, UpdateTalkRequest, ChangeStateRequest},
 };
 
 pub struct TalkService;
@@ -215,6 +215,33 @@ impl TalkService {
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
             Ok(talks)
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
+
+    /// Change talk state (organizer only)
+    pub async fn change_state(id: &str, request: ChangeStateRequest) -> Result<Talk, String> {
+        let token = AuthService::get_token().ok_or("Not authenticated")?;
+
+        let response = Request::put(&format!("/api/talks/{}/state", id))
+            .header("Authorization", &format!("Bearer {}", token))
+            .json(&request)
+            .map_err(|e| format!("Failed to serialize request: {}", e))?
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            let talk = response
+                .json::<Talk>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+            Ok(talk)
         } else {
             let error = response
                 .json::<ErrorResponse>()

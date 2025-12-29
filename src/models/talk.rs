@@ -5,13 +5,41 @@ use uuid::Uuid;
 
 use super::LabelResponse;
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "talk_state", rename_all = "lowercase")]
 pub enum TalkState {
     Submitted,
     Pending,
     Accepted,
     Rejected,
+}
+
+impl TalkState {
+    /// Check if a state transition is valid
+    pub fn can_transition_to(&self, target: &TalkState) -> bool {
+        match (self, target) {
+            // From Submitted
+            (TalkState::Submitted, TalkState::Pending) => true,
+            (TalkState::Submitted, TalkState::Rejected) => true,
+
+            // From Pending (by speaker)
+            (TalkState::Pending, TalkState::Accepted) => true,
+            (TalkState::Pending, TalkState::Rejected) => true,
+            (TalkState::Pending, TalkState::Submitted) => true, // Allow organizer to revert
+
+            // Terminal states cannot transition
+            (TalkState::Accepted, _) => false,
+            (TalkState::Rejected, _) => false,
+
+            // No other transitions allowed
+            _ => false,
+        }
+    }
+
+    /// Check if this is a terminal state
+    pub fn is_terminal(&self) -> bool {
+        matches!(self, TalkState::Accepted | TalkState::Rejected)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -53,6 +81,12 @@ pub struct RespondToTalkRequest {
 pub enum TalkAction {
     Accept,
     Decline,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ChangeStateRequest {
+    pub new_state: TalkState,
+    pub reason: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
