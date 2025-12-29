@@ -1195,6 +1195,220 @@ input:focus, textarea:focus, select:focus {
     font-style: italic;
 }
 
+/* Organizer Labels Management */
+.organizer-labels {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.labels-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.labels-header h1 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.error-message {
+    background: #fee;
+    border: 1px solid #fcc;
+    color: #c33;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+}
+
+/* Label Form Card */
+.label-form-card {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.label-form-card h3 {
+    margin: 0 0 1.5rem 0;
+    color: #2c3e50;
+}
+
+.color-picker-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.color-picker-group input[type="color"] {
+    width: 60px;
+    height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.color-preview {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    color: white;
+    font-family: monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Search Bar */
+.search-bar {
+    margin-bottom: 2rem;
+}
+
+.search-bar input {
+    width: 100%;
+    max-width: 500px;
+    padding: 0.75rem 1rem;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.search-bar input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+/* Labels Grid */
+.labels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.label-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.label-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+/* Label Display */
+.label-display {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.label-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.label-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.ai-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: help;
+}
+
+.label-description {
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.label-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.label-date {
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.label-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+/* Label Edit Form */
+.label-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.label-edit-form .form-group {
+    margin-bottom: 0;
+}
+
+.label-edit-form input,
+.label-edit-form textarea {
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+/* Button Variants */
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .stats-grid {
@@ -1212,5 +1426,23 @@ input:focus, textarea:focus, select:focus {
     .talk-meta {
         flex-direction: column;
         gap: 0.5rem;
+    }
+
+    .labels-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .labels-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .label-actions {
+        flex-direction: column;
+    }
+
+    .label-actions button {
+        width: 100%;
     }
 }

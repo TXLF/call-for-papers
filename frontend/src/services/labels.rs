@@ -1,5 +1,5 @@
 use gloo_net::http::Request;
-use crate::{services::auth::AuthService, types::{Label, ErrorResponse, AddLabelToTalkRequest}};
+use crate::{services::auth::AuthService, types::{Label, ErrorResponse, AddLabelToTalkRequest, CreateLabelRequest, UpdateLabelRequest}};
 
 pub struct LabelService;
 
@@ -82,6 +82,79 @@ impl LabelService {
         let token = AuthService::get_token().ok_or("Not authenticated")?;
 
         let response = Request::delete(&format!("/api/talks/{}/labels/{}", talk_id, label_id))
+            .header("Authorization", &format!("Bearer {}", token))
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            Ok(())
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
+
+    /// Create a new label (organizer only)
+    pub async fn create_label(request: CreateLabelRequest) -> Result<Label, String> {
+        let token = AuthService::get_token().ok_or("Not authenticated")?;
+
+        let response = Request::post("/api/labels")
+            .header("Authorization", &format!("Bearer {}", token))
+            .json(&request)
+            .map_err(|e| format!("Failed to serialize request: {}", e))?
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            response
+                .json::<Label>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
+
+    /// Update an existing label (organizer only)
+    pub async fn update_label(id: &str, request: UpdateLabelRequest) -> Result<Label, String> {
+        let token = AuthService::get_token().ok_or("Not authenticated")?;
+
+        let response = Request::put(&format!("/api/labels/{}", id))
+            .header("Authorization", &format!("Bearer {}", token))
+            .json(&request)
+            .map_err(|e| format!("Failed to serialize request: {}", e))?
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            response
+                .json::<Label>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
+
+    /// Delete a label (organizer only)
+    pub async fn delete_label(id: &str) -> Result<(), String> {
+        let token = AuthService::get_token().ok_or("Not authenticated")?;
+
+        let response = Request::delete(&format!("/api/labels/{}", id))
             .header("Authorization", &format!("Bearer {}", token))
             .send()
             .await

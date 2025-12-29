@@ -5,7 +5,7 @@ use crate::components::{protected_route::ProtectedRoute, organizer_route::Organi
 use crate::pages::{
     home::Home, login::Login, my_talks::MyTalks, not_found::NotFound, signup::Signup,
     submit_talk::SubmitTalk, organizer_talks::OrganizerTalks, organizer_dashboard::OrganizerDashboard,
-    ratings_dashboard::RatingsDashboard,
+    organizer_labels::OrganizerLabels, ratings_dashboard::RatingsDashboard,
 };
 use crate::services::auth::AuthService;
 
@@ -25,6 +25,8 @@ pub enum Route {
     OrganizerDashboard,
     #[at("/organizer/talks")]
     OrganizerTalks,
+    #[at("/organizer/labels")]
+    OrganizerLabels,
     #[at("/organizer/ratings")]
     RatingsDashboard,
     #[not_found]
@@ -55,6 +57,11 @@ fn switch(routes: Route) -> Html {
         Route::OrganizerTalks => html! {
             <OrganizerRoute>
                 <OrganizerTalks />
+            </OrganizerRoute>
+        },
+        Route::OrganizerLabels => html! {
+            <OrganizerRoute>
+                <OrganizerLabels />
             </OrganizerRoute>
         },
         Route::RatingsDashboard => html! {
@@ -108,6 +115,7 @@ fn app_content() -> Html {
                             if *is_organizer {
                                 <Link<Route> to={Route::OrganizerDashboard}>{ "Dashboard" }</Link<Route>>
                                 <Link<Route> to={Route::OrganizerTalks}>{ "Review Talks" }</Link<Route>>
+                                <Link<Route> to={Route::OrganizerLabels}>{ "Manage Labels" }</Link<Route>>
                                 <Link<Route> to={Route::RatingsDashboard}>{ "Ratings Dashboard" }</Link<Route>>
                             }
                             <button onclick={on_logout} class="logout-button">{ "Logout" }</button>

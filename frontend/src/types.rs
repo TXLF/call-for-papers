@@ -56,6 +56,20 @@ pub struct Label {
     pub created_at: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct CreateLabelRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub color: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateLabelRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub color: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Talk {
     pub id: String,
