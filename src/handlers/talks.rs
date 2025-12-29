@@ -10,10 +10,30 @@ use uuid::Uuid;
 use crate::{
     api::AppState,
     models::{
-        auth::ErrorResponse, CreateTalkRequest, Talk, TalkResponse, TalkState, UpdateTalkRequest,
-        RespondToTalkRequest, TalkAction, User,
+        auth::ErrorResponse, CreateTalkRequest, Label, LabelResponse, Talk, TalkResponse,
+        TalkState, UpdateTalkRequest, RespondToTalkRequest, TalkAction, User,
     },
 };
+
+/// Helper function to fetch labels for a talk
+async fn fetch_talk_labels(
+    db: &sqlx::PgPool,
+    talk_id: Uuid,
+) -> Result<Vec<LabelResponse>, sqlx::Error> {
+    let labels = sqlx::query_as::<_, Label>(
+        r#"
+        SELECT l.* FROM labels l
+        INNER JOIN talk_labels tl ON l.id = tl.label_id
+        WHERE tl.talk_id = $1
+        ORDER BY l.name ASC
+        "#,
+    )
+    .bind(talk_id)
+    .fetch_all(db)
+    .await?;
+
+    Ok(labels.into_iter().map(LabelResponse::from).collect())
+}
 
 /// Create a new talk submission
 pub async fn create_talk(
@@ -67,7 +87,29 @@ pub async fn create_talk(
         )
     })?;
 
-    Ok((StatusCode::CREATED, Json(TalkResponse::from(talk))))
+    // Add labels if provided
+    if let Some(label_ids) = payload.label_ids {
+        for label_id in label_ids {
+            let _ = sqlx::query(
+                r#"
+                INSERT INTO talk_labels (talk_id, label_id, added_by)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (talk_id, label_id) DO NOTHING
+                "#,
+            )
+            .bind(talk.id)
+            .bind(label_id)
+            .bind(user.id)
+            .execute(&state.db)
+            .await;
+        }
+    }
+
+    // Fetch labels and return
+    let labels = fetch_talk_labels(&state.db, talk.id).await.unwrap_or_default();
+    let response = TalkResponse::from(talk).with_labels(labels);
+
+    Ok((StatusCode::CREATED, Json(response)))
 }
 
 /// Get all talks for the current user
@@ -93,7 +135,13 @@ pub async fn get_my_talks(
         )
     })?;
 
-    let responses: Vec<TalkResponse> = talks.into_iter().map(TalkResponse::from).collect();
+    // Fetch labels for each talk
+    let mut responses = Vec::new();
+    for talk in talks {
+        let labels = fetch_talk_labels(&state.db, talk.id).await.unwrap_or_default();
+        responses.push(TalkResponse::from(talk).with_labels(labels));
+    }
+
     Ok(Json(responses))
 }
 
@@ -135,7 +183,11 @@ pub async fn get_talk(
         ));
     }
 
-    Ok(Json(TalkResponse::from(talk)))
+    // Fetch labels for the talk
+    let labels = fetch_talk_labels(&state.db, talk.id).await.unwrap_or_default();
+    let response = TalkResponse::from(talk).with_labels(labels);
+
+    Ok(Json(response))
 }
 
 /// Update a talk (only by the speaker who created it)

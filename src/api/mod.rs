@@ -31,10 +31,25 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/talks/:id", delete(handlers::delete_talk))
         .route("/talks/:id/upload-slides", post(handlers::upload_slides))
         .route("/talks/:id/respond", post(handlers::respond_to_talk))
+        // Talk-label routes
+        .route("/talks/:id/labels", get(handlers::get_talk_labels))
+        .route("/talks/:id/labels", post(handlers::add_labels_to_talk))
+        .route("/talks/:id/labels/:label_id", delete(handlers::remove_label_from_talk))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth_middleware,
         ));
+
+    // Organizer-only routes
+    let organizer_routes = Router::new()
+        .route("/labels", post(handlers::create_label))
+        .route("/labels/:id", put(handlers::update_label))
+        .route("/labels/:id", delete(handlers::delete_label))
+        .layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            middleware::auth_middleware,
+        ))
+        .layer(axum_middleware::from_fn(middleware::organizer_middleware));
 
     // Public API routes
     let api_routes = Router::new()
@@ -43,7 +58,10 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         // Authentication routes
         .route("/auth/register", post(handlers::register))
         .route("/auth/login", post(handlers::login))
+        // Public label routes
+        .route("/labels", get(handlers::list_labels))
         .merge(protected_routes)
+        .merge(organizer_routes)
         .with_state(state);
 
     // Serve uploaded files

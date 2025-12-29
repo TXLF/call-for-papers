@@ -4,8 +4,8 @@ use web_sys::{File, HtmlInputElement, HtmlTextAreaElement};
 
 use crate::{
     app::Route,
-    services::talks::TalkService,
-    types::{CreateTalkRequest, Talk},
+    services::{talks::TalkService, labels::LabelService},
+    types::{CreateTalkRequest, Talk, Label},
 };
 
 #[function_component(SubmitTalk)]
@@ -20,6 +20,29 @@ pub fn submit_talk() -> Html {
     let success = use_state(|| false);
     let loading = use_state(|| false);
     let uploading_slides = use_state(|| false);
+    let available_labels = use_state(|| Vec::<Label>::new());
+    let selected_label_ids = use_state(|| Vec::<String>::new());
+    let labels_loading = use_state(|| true);
+
+    // Fetch available labels on mount
+    {
+        let available_labels = available_labels.clone();
+        let labels_loading = labels_loading.clone();
+        use_effect_with((), move |_| {
+            wasm_bindgen_futures::spawn_local(async move {
+                match LabelService::list_labels().await {
+                    Ok(labels) => {
+                        available_labels.set(labels);
+                        labels_loading.set(false);
+                    }
+                    Err(_) => {
+                        labels_loading.set(false);
+                    }
+                }
+            });
+            || ()
+        });
+    }
 
     let title_clone = title.clone();
     let on_title_change = Callback::from(move |e: Event| {
@@ -49,11 +72,25 @@ pub fn submit_talk() -> Html {
         }
     });
 
+    let on_label_toggle = {
+        let selected_label_ids = selected_label_ids.clone();
+        Callback::from(move |label_id: String| {
+            let mut current = (*selected_label_ids).clone();
+            if let Some(pos) = current.iter().position(|id| id == &label_id) {
+                current.remove(pos);
+            } else {
+                current.push(label_id);
+            }
+            selected_label_ids.set(current);
+        })
+    };
+
     let on_submit = {
         let title = title.clone();
         let short_summary = short_summary.clone();
         let long_description = long_description.clone();
         let slides_file = slides_file.clone();
+        let selected_label_ids = selected_label_ids.clone();
         let created_talk = created_talk.clone();
         let error = error.clone();
         let success = success.clone();
@@ -67,6 +104,7 @@ pub fn submit_talk() -> Html {
             let short_summary_val = (*short_summary).clone();
             let long_description_val = (*long_description).clone();
             let slides_file_opt = (*slides_file).clone();
+            let label_ids_val = (*selected_label_ids).clone();
             let created_talk = created_talk.clone();
             let error = error.clone();
             let success = success.clone();
@@ -94,10 +132,17 @@ pub fn submit_talk() -> Html {
                     Some(long_description_val.trim().to_string())
                 };
 
+                let label_ids_opt = if label_ids_val.is_empty() {
+                    None
+                } else {
+                    Some(label_ids_val)
+                };
+
                 let request = CreateTalkRequest {
                     title: title_val.trim().to_string(),
                     short_summary: short_summary_val.trim().to_string(),
                     long_description: long_desc,
+                    label_ids: label_ids_opt,
                 };
 
                 match TalkService::create_talk(request).await {
@@ -246,6 +291,54 @@ pub fn submit_talk() -> Html {
                                             }
                                         } else {
                                             html! {}
+                                        }
+                                    }
+                                </div>
+
+                                <div class="form-group">
+                                    <label>
+                                        { "Labels " }
+                                        <span class="optional">{ "(Optional)" }</span>
+                                    </label>
+                                    {
+                                        if *labels_loading {
+                                            html! {
+                                                <p class="labels-loading">{ "Loading labels..." }</p>
+                                            }
+                                        } else if (*available_labels).is_empty() {
+                                            html! {
+                                                <p class="no-labels">{ "No labels available" }</p>
+                                            }
+                                        } else {
+                                            html! {
+                                                <div class="labels-checkbox-group">
+                                                    {
+                                                        for (*available_labels).iter().map(|label| {
+                                                            let label_id = label.id.clone();
+                                                            let is_selected = (*selected_label_ids).contains(&label.id);
+                                                            let on_label_toggle = on_label_toggle.clone();
+                                                            let background_color = label.color.clone().unwrap_or_else(|| "#6B7280".to_string());
+
+                                                            html! {
+                                                                <label class="label-checkbox-item">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={is_selected}
+                                                                        disabled={*loading}
+                                                                        onchange={move |_| on_label_toggle.emit(label_id.clone())}
+                                                                    />
+                                                                    <span
+                                                                        class="label-preview"
+                                                                        style={format!("background-color: {}", background_color)}
+                                                                    >
+                                                                        { &label.name }
+                                                                    </span>
+                                                                </label>
+                                                            }
+                                                        })
+                                                    }
+                                                </div>
+                                            }
                                         }
                                     }
                                 </div>

@@ -1,7 +1,12 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-use crate::{app::Route, services::talks::TalkService, types::{Talk, TalkState}};
+use crate::{
+    app::Route,
+    components::LabelBadge,
+    services::talks::TalkService,
+    types::{Talk, TalkState},
+};
 
 #[function_component(MyTalks)]
 pub fn my_talks() -> Html {
@@ -146,6 +151,26 @@ pub fn my_talks() -> Html {
                                                 </span>
                                             </div>
                                             <p class="talk-summary">{ &talk.short_summary }</p>
+                                            {
+                                                if !talk.labels.is_empty() {
+                                                    html! {
+                                                        <div class="talk-labels">
+                                                            {
+                                                                for talk.labels.iter().map(|label| {
+                                                                    html! {
+                                                                        <LabelBadge
+                                                                            label={label.clone()}
+                                                                            removable={false}
+                                                                        />
+                                                                    }
+                                                                })
+                                                            }
+                                                        </div>
+                                                    }
+                                                } else {
+                                                    html! {}
+                                                }
+                                            }
                                             {
                                                 if let Some(desc) = &talk.long_description {
                                                     html! {

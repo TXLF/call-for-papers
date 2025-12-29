@@ -47,6 +47,16 @@ pub enum TalkState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Label {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub color: Option<String>,
+    pub is_ai_generated: bool,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Talk {
     pub id: String,
     pub speaker_id: String,
@@ -57,6 +67,7 @@ pub struct Talk {
     pub state: TalkState,
     pub submitted_at: String,
     pub updated_at: String,
+    pub labels: Vec<Label>,
 }
 
 #[derive(Debug, Serialize)]
@@ -64,6 +75,7 @@ pub struct CreateTalkRequest {
     pub title: String,
     pub short_summary: String,
     pub long_description: Option<String>,
+    pub label_ids: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -77,4 +89,9 @@ pub struct UpdateTalkRequest {
 #[derive(Debug, Serialize)]
 pub struct RespondToTalkRequest {
     pub action: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AddLabelToTalkRequest {
+    pub label_ids: Vec<String>,
 }

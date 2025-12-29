@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+use super::LabelResponse;
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "talk_state", rename_all = "lowercase")]
 pub enum TalkState {
@@ -30,6 +32,7 @@ pub struct CreateTalkRequest {
     pub title: String,
     pub short_summary: String,
     pub long_description: Option<String>,
+    pub label_ids: Option<Vec<Uuid>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -63,6 +66,7 @@ pub struct TalkResponse {
     pub state: TalkState,
     pub submitted_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub labels: Vec<LabelResponse>,
 }
 
 impl From<Talk> for TalkResponse {
@@ -77,6 +81,14 @@ impl From<Talk> for TalkResponse {
             state: talk.state,
             submitted_at: talk.submitted_at,
             updated_at: talk.updated_at,
+            labels: Vec::new(), // Will be populated by handlers when needed
         }
+    }
+}
+
+impl TalkResponse {
+    pub fn with_labels(mut self, labels: Vec<LabelResponse>) -> Self {
+        self.labels = labels;
+        self
     }
 }
