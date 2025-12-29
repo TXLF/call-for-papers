@@ -12,3 +12,4 @@ pub mod ratings_dashboard;
 pub mod manage_tracks;
 pub mod manage_schedule_slots;
 pub mod assign_talks;
+pub mod schedule_builder;
