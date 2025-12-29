@@ -228,3 +228,34 @@ pub struct UpdateTrackRequest {
     pub description: Option<String>,
     pub capacity: Option<i32>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ScheduleSlot {
+    pub id: String,
+    pub conference_id: String,
+    pub track_id: String,
+    pub talk_id: Option<String>,
+    pub slot_date: String,
+    pub start_time: String,
+    pub end_time: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateScheduleSlotRequest {
+    pub conference_id: String,
+    pub track_id: String,
+    pub slot_date: String,
+    pub start_time: String,
+    pub end_time: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateScheduleSlotRequest {
+    pub track_id: Option<String>,
+    pub talk_id: Option<String>,
+    pub slot_date: Option<String>,
+    pub start_time: Option<String>,
+    pub end_time: Option<String>,
+}

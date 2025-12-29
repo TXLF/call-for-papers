@@ -58,6 +58,10 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/tracks", post(handlers::create_track))
         .route("/tracks/:id", put(handlers::update_track))
         .route("/tracks/:id", delete(handlers::delete_track))
+        // Schedule slot routes (organizer only for CUD operations)
+        .route("/schedule-slots", post(handlers::create_schedule_slot))
+        .route("/schedule-slots/:id", put(handlers::update_schedule_slot))
+        .route("/schedule-slots/:id", delete(handlers::delete_schedule_slot))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth_middleware,
@@ -76,6 +80,9 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         // Public track routes (read-only)
         .route("/tracks", get(handlers::list_tracks))
         .route("/tracks/:id", get(handlers::get_track))
+        // Public schedule slot routes (read-only)
+        .route("/schedule-slots", get(handlers::list_schedule_slots))
+        .route("/schedule-slots/:id", get(handlers::get_schedule_slot))
         .merge(protected_routes)
         .merge(organizer_routes)
         .with_state(state);

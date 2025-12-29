@@ -7,6 +7,7 @@ use crate::pages::{
     submit_talk::SubmitTalk, speaker_dashboard::SpeakerDashboard, organizer_talks::OrganizerTalks,
     organizer_dashboard::OrganizerDashboard, organizer_labels::OrganizerLabels,
     ratings_dashboard::RatingsDashboard, manage_tracks::ManageTracks,
+    manage_schedule_slots::ManageScheduleSlots,
 };
 use crate::services::auth::AuthService;
 
@@ -34,6 +35,8 @@ pub enum Route {
     RatingsDashboard,
     #[at("/organizer/tracks")]
     ManageTracks,
+    #[at("/organizer/schedule-slots")]
+    ManageScheduleSlots,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -82,6 +85,11 @@ fn switch(routes: Route) -> Html {
         Route::ManageTracks => html! {
             <OrganizerRoute>
                 <ManageTracks />
+            </OrganizerRoute>
+        },
+        Route::ManageScheduleSlots => html! {
+            <OrganizerRoute>
+                <ManageScheduleSlots />
             </OrganizerRoute>
         },
         Route::NotFound => html! { <NotFound /> },
@@ -133,6 +141,7 @@ fn app_content() -> Html {
                                 <Link<Route> to={Route::OrganizerTalks}>{ "Review Talks" }</Link<Route>>
                                 <Link<Route> to={Route::OrganizerLabels}>{ "Manage Labels" }</Link<Route>>
                                 <Link<Route> to={Route::ManageTracks}>{ "Manage Tracks" }</Link<Route>>
+                                <Link<Route> to={Route::ManageScheduleSlots}>{ "Manage Time Slots" }</Link<Route>>
                                 <Link<Route> to={Route::RatingsDashboard}>{ "Ratings Dashboard" }</Link<Route>>
                             }
                             <button onclick={on_logout} class="logout-button">{ "Logout" }</button>

@@ -10,3 +10,4 @@ pub mod organizer_dashboard;
 pub mod organizer_labels;
 pub mod ratings_dashboard;
 pub mod manage_tracks;
+pub mod manage_schedule_slots;
