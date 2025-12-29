@@ -1501,3 +1501,173 @@ input:focus, textarea:focus, select:focus {
         width: 100%;
     }
 }
+
+/* Speaker Dashboard */
+.speaker-dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.speaker-dashboard h1 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 2rem;
+}
+
+.section-description {
+    color: #666;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* Pending Actions Section */
+.pending-actions-section {
+    background: linear-gradient(135deg, #fff3e0 0%, #fffbf0 100%);
+    border: 2px solid #f57c00;
+}
+
+.pending-actions-section h2 {
+    color: #f57c00;
+}
+
+.pending-talks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pending-talk-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.pending-talk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pending-talk-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    flex: 1;
+    font-size: 1.25rem;
+}
+
+.pending-talk-summary {
+    color: #666;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.pending-talk-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.pending-talk-actions .btn {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Recent Talks */
+.recent-talks {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.recent-talk-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.25rem;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.recent-talk-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #3498db;
+}
+
+.recent-talk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.recent-talk-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    flex: 1;
+    font-size: 1.1rem;
+}
+
+.recent-talk-summary {
+    color: #666;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+.recent-talk-meta {
+    color: #999;
+    font-size: 0.85rem;
+}
+
+.view-all-btn {
+    display: inline-block;
+    margin-top: 1rem;
+    text-decoration: none;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h2 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: #666;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+/* Responsive adjustments for speaker dashboard */
+@media (max-width: 768px) {
+    .pending-talk-header {
+        flex-direction: column;
+    }
+
+    .pending-talk-actions {
+        flex-direction: column;
+    }
+
+    .pending-talk-actions .btn {
+        width: 100%;
+    }
+
+    .recent-talk-header {
+        flex-direction: column;
+    }
+}

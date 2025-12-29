@@ -4,6 +4,7 @@ pub mod my_talks;
 pub mod not_found;
 pub mod signup;
 pub mod submit_talk;
+pub mod speaker_dashboard;
 pub mod organizer_talks;
 pub mod organizer_dashboard;
 pub mod organizer_labels;
