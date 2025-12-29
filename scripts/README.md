@@ -15,7 +15,6 @@ This directory contains scripts and configuration files for deploying and managi
 ### Configuration Files
 
 - **`envoy.yaml`** - Envoy proxy configuration with SSL, rate limiting, and observability
-- **`nginx.conf`** - Legacy nginx configuration (deprecated, use Envoy instead)
 - **`call-for-papers.service`** - Systemd service for native binary deployment
 - **`call-for-papers-docker.service`** - Systemd service for Docker Compose deployment
 

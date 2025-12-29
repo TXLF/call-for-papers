@@ -142,10 +142,10 @@ The system is designed for self-hosting on bare EC2 instances:
 1. Deploy PostgreSQL database
 2. Copy the compiled binary to your server
 3. Set up environment variables or configuration file
-4. Run the binary behind a reverse proxy (nginx recommended)
+4. Run the binary behind a reverse proxy (Envoy recommended)
 5. Configure HTTPS with Let's Encrypt
 
-Detailed deployment instructions coming soon.
+See `scripts/README.md` for detailed deployment instructions.
 
 ## AI Integration
 
