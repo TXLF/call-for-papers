@@ -2,6 +2,44 @@
 
 This guide explains how to set up and run the Call for Papers application for development.
 
+## Quick Start
+
+For the impatient developer:
+
+```bash
+# 1. Install prerequisites
+rustup target add wasm32-unknown-unknown
+cargo install trunk sqlx-cli --no-default-features --features postgres
+
+# 2. Start database (choose one):
+podman-compose up -d              # Using containers (recommended)
+# OR
+brew services start postgresql@15 # macOS native
+# OR
+sudo systemctl start postgresql   # Linux native
+
+# 3. Create .env file
+cat > .env << 'EOF'
+DATABASE_URL=postgres://postgres:postgres@localhost/call_for_papers
+JWT_SECRET=dev-secret-change-in-production
+RUST_LOG=info,call_for_papers=debug
+EOF
+
+# 4. Create database
+createdb call_for_papers
+
+# 5. Start development servers (two terminals):
+# Terminal 1:
+cd frontend && trunk serve
+
+# Terminal 2:
+cargo run
+
+# 6. Open http://127.0.0.1:8000
+```
+
+That's it! Read below for detailed explanations and troubleshooting.
+
 ## Prerequisites
 
 ### Backend
@@ -12,6 +50,11 @@ This guide explains how to set up and run the Call for Papers application for de
 - Rust toolchain (1.70 or later)
 - `wasm32-unknown-unknown` target
 - Trunk build tool
+
+### Optional but Recommended
+- SQLx CLI (`cargo install sqlx-cli --no-default-features --features postgres`) - For database migrations
+- cargo-watch (`cargo install cargo-watch`) - Auto-rebuild on file changes
+- beads-cli (`cargo install beads-cli`) - Project issue tracking
 
 ## Development Environment Options
 
@@ -107,13 +150,45 @@ sudo systemctl start postgresql
 
 ### 4. Configure Environment
 
+Create a `.env` file in the project root:
+
 ```bash
-cp .env.example .env
+cat > .env << 'EOF'
+# Database
+DATABASE_URL=postgres://postgres:postgres@localhost/call_for_papers
+
+# Server
+HOST=127.0.0.1
+PORT=8080
+
+# JWT Secret (generate a random string for production!)
+JWT_SECRET=your-secret-key-change-this-in-production
+
+# Log level
+RUST_LOG=info,call_for_papers=debug
+
+# Frontend URL (for CORS in development)
+FRONTEND_URL=http://127.0.0.1:8000
+EOF
 ```
 
-Edit `.env` to set your database credentials if needed. Default:
-```
-DATABASE_URL=postgres://postgres:postgres@localhost/call_for_papers
+**Environment Variables Reference:**
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | - | Yes |
+| `HOST` | Server bind address | `127.0.0.1` | No |
+| `PORT` | Server port | `8080` | No |
+| `JWT_SECRET` | Secret key for JWT authentication tokens | - | Yes |
+| `RUST_LOG` | Logging level (trace, debug, info, warn, error) | `info` | No |
+| `FRONTEND_URL` | Frontend URL for CORS (dev only) | - | No |
+
+**Generate a secure JWT secret:**
+```bash
+# Linux/macOS
+openssl rand -base64 32
+
+# Or use any random string generator
 ```
 
 ## Running the Application
@@ -207,8 +282,53 @@ When using `trunk serve`:
 
 4. To manually run migrations:
    ```bash
-   sqlx migrate run
+   sqlx migrate run --database-url "postgres://postgres:postgres@localhost/call_for_papers"
    ```
+
+5. Revert the last migration:
+   ```bash
+   sqlx migrate revert --database-url "postgres://postgres:postgres@localhost/call_for_papers"
+   ```
+
+6. Check migration status:
+   ```bash
+   sqlx migrate info
+   ```
+
+**Note:** See [migrations/README.md](migrations/README.md) for detailed schema documentation.
+
+### Issue Tracking with Beads
+
+This project uses `bd` (beads) for issue tracking. Common workflow:
+
+```bash
+# View available work (tasks with no blockers)
+bd ready
+
+# Show details for a specific issue
+bd show cfp-xxx
+
+# Claim an issue to work on it
+bd update cfp-xxx --status=in_progress
+
+# Close completed work
+bd close cfp-xxx --reason "Implemented feature X"
+
+# View all open issues
+bd list --status=open
+
+# View project statistics
+bd stats
+
+# Sync changes with git remote
+bd sync
+```
+
+**Workflow tips:**
+- Run `bd prime` to see the full workflow guide
+- Issues are tracked in `.beads/issues.jsonl`
+- Always run `bd sync` at the end of your session
+- Use `bd create` to report new issues
 
 ## Building for Production
 
@@ -286,22 +406,155 @@ cargo test --target wasm32-unknown-unknown
 ## Troubleshooting
 
 ### Database Connection Errors
-- Ensure PostgreSQL is running: `pg_isready`
-- Check your DATABASE_URL in `.env`
-- Verify the database exists or let the app create it
+
+**Issue:** `connection refused` or `database "call_for_papers" does not exist`
+
+**Solutions:**
+```bash
+# 1. Check if PostgreSQL is running
+pg_isready
+
+# 2. Start PostgreSQL if not running
+# macOS (Homebrew)
+brew services start postgresql@15
+
+# Linux (systemd)
+sudo systemctl start postgresql
+
+# With Podman/Docker
+podman-compose up -d
+
+# 3. Verify database exists
+psql -l | grep call_for_papers
+
+# 4. Create database if needed
+psql -c "CREATE DATABASE call_for_papers;"
+
+# 5. Test connection
+psql postgres://postgres:postgres@localhost/call_for_papers -c "SELECT 1;"
+```
+
+### Migration Errors
+
+**Issue:** `migration has already been applied` or migration conflicts
+
+**Solutions:**
+```bash
+# Check current migration status
+sqlx migrate info
+
+# If migrations are out of sync, reset database (WARNING: destroys data)
+psql -c "DROP DATABASE call_for_papers;"
+psql -c "CREATE DATABASE call_for_papers;"
+sqlx migrate run
+```
 
 ### Frontend Build Errors
-- Ensure `wasm32-unknown-unknown` target is installed
-- Ensure Trunk is installed and up to date
-- Clear cache: `rm -rf frontend/dist frontend/target`
+
+**Issue:** `error: target wasm32-unknown-unknown not found`
+
+**Solution:**
+```bash
+rustup target add wasm32-unknown-unknown
+```
+
+**Issue:** `trunk: command not found`
+
+**Solution:**
+```bash
+cargo install trunk
+# Add cargo bin to PATH if needed
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+**Issue:** Build errors after pulling changes
+
+**Solution:**
+```bash
+# Clean and rebuild
+cd frontend
+trunk clean
+rm -rf dist target
+trunk build
+```
+
+### SQLx Compile-Time Verification Errors
+
+**Issue:** `DATABASE_URL not found` during compilation
+
+**Solutions:**
+```bash
+# Option 1: Set environment variable
+export DATABASE_URL="postgres://postgres:postgres@localhost/call_for_papers"
+
+# Option 2: Use offline mode (requires prepared sqlx-data.json)
+cargo sqlx prepare
+```
 
 ### Port Already in Use
-- Backend (8080): Change `SERVER_PORT` in `.env`
-- Frontend dev server (8000): Use `trunk serve --port 8001`
 
-### CORS Issues
-- When developing, use `trunk serve` for the frontend
-- Or build the frontend and run through the backend
+**Issue:** `address already in use` error
+
+**Solutions:**
+```bash
+# Find process using port 8080
+lsof -i :8080
+
+# Kill the process
+kill -9 <PID>
+
+# Or change the port
+# Backend: Edit PORT in .env
+# Frontend: trunk serve --port 8001
+```
+
+### CORS Issues in Development
+
+**Issue:** `CORS policy: No 'Access-Control-Allow-Origin' header`
+
+**Solutions:**
+- Always access frontend via `trunk serve` (http://127.0.0.1:8000), not backend directly
+- Make sure `FRONTEND_URL` is set in `.env`
+- The backend automatically configures CORS for the frontend URL
+
+### First User Setup
+
+After starting the application, you'll need an organizer account:
+
+```bash
+# 1. Sign up via the web interface at http://127.0.0.1:8000/signup
+# 2. Promote your user to organizer in the database:
+
+psql postgres://postgres:postgres@localhost/call_for_papers
+
+# In psql:
+UPDATE users SET is_organizer = true WHERE email = 'your@email.com';
+\q
+```
+
+### Complete Environment Reset
+
+If things are completely broken, reset everything:
+
+```bash
+# 1. Stop all running services
+pkill -f "trunk serve"
+pkill -f "cargo run"
+
+# 2. Clean build artifacts
+cargo clean
+cd frontend && trunk clean && cd ..
+rm -rf frontend/dist frontend/target
+
+# 3. Reset database
+psql -c "DROP DATABASE IF EXISTS call_for_papers;"
+psql -c "CREATE DATABASE call_for_papers;"
+
+# 4. Rebuild from scratch
+cargo build
+cd frontend && trunk build && cd ..
+cargo run
+```
 
 ## Useful Commands
 

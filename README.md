@@ -92,14 +92,22 @@ cd call-for-papers
 cargo build
 
 # Setup database
-# (instructions coming soon)
+createdb call_for_papers
 
-# Run migrations
-# (instructions coming soon)
+# Migrations run automatically on server start, or run manually:
+sqlx migrate run --database-url "postgres://postgres:postgres@localhost/call_for_papers"
 
-# Start the server
+# Configure environment (create .env file - see DEVELOPMENT.md for details)
+cat > .env << 'EOF'
+DATABASE_URL=postgres://postgres:postgres@localhost/call_for_papers
+JWT_SECRET=change-this-to-a-random-secret
+EOF
+
+# Start the server (migrations will run automatically)
 cargo run
 ```
+
+For detailed setup instructions including database configuration, environment variables, and troubleshooting, see **[DEVELOPMENT.md](DEVELOPMENT.md)**.
 
 ### Configuration
 
