@@ -1,7 +1,14 @@
 use gloo_net::http::Request;
 use gloo_storage::{LocalStorage, Storage};
+use serde::Deserialize;
+use base64::{Engine as _, engine::general_purpose};
 
 use crate::types::{AuthResponse, ErrorResponse, LoginRequest, RegisterRequest};
+
+#[derive(Debug, Deserialize)]
+struct JwtClaims {
+    is_organizer: bool,
+}
 
 const TOKEN_KEY: &str = "auth_token";
 
@@ -74,5 +81,39 @@ impl AuthService {
 
     pub fn is_authenticated() -> bool {
         Self::get_token().is_some()
+    }
+
+    /// Decode JWT token and extract claims
+    fn decode_jwt_claims(token: &str) -> Option<JwtClaims> {
+        // JWT format: header.payload.signature
+        let parts: Vec<&str> = token.split('.').collect();
+        if parts.len() != 3 {
+            return None;
+        }
+
+        // Decode the payload (second part)
+        let payload = parts[1];
+
+        // JWT uses base64url encoding, which may need padding
+        let padded = match payload.len() % 4 {
+            0 => payload.to_string(),
+            n => format!("{}{}", payload, "=".repeat(4 - n)),
+        };
+
+        // Decode base64
+        let decoded = general_purpose::STANDARD
+            .decode(padded.as_bytes())
+            .ok()?;
+
+        // Parse JSON
+        serde_json::from_slice::<JwtClaims>(&decoded).ok()
+    }
+
+    /// Check if the current user is an organizer by decoding the JWT token
+    pub fn is_organizer() -> bool {
+        Self::get_token()
+            .and_then(|token| Self::decode_jwt_claims(&token))
+            .map(|claims| claims.is_organizer)
+            .unwrap_or(false)
     }
 }

@@ -519,3 +519,50 @@ input:focus, textarea:focus, select:focus {
     font-style: italic;
     margin-top: 0.5rem;
 }
+
+/* Filter UI */
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-weight: 500;
+    margin: 0;
+    color: #555;
+}
+
+.filter-dropdown {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    background-color: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+.filter-dropdown:hover {
+    border-color: #3498db;
+}
+
+.filter-dropdown:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Speaker Info */
+.speaker-info {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.speaker-email {
+    color: #6c757d;
+    font-style: italic;
+}

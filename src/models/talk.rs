@@ -67,6 +67,8 @@ pub struct TalkResponse {
     pub submitted_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub labels: Vec<LabelResponse>,
+    pub speaker_name: String,
+    pub speaker_email: String,
 }
 
 impl From<Talk> for TalkResponse {
@@ -82,6 +84,8 @@ impl From<Talk> for TalkResponse {
             submitted_at: talk.submitted_at,
             updated_at: talk.updated_at,
             labels: Vec::new(), // Will be populated by handlers when needed
+            speaker_name: String::new(), // Will be populated by handlers when needed
+            speaker_email: String::new(), // Will be populated by handlers when needed
         }
     }
 }
@@ -89,6 +93,12 @@ impl From<Talk> for TalkResponse {
 impl TalkResponse {
     pub fn with_labels(mut self, labels: Vec<LabelResponse>) -> Self {
         self.labels = labels;
+        self
+    }
+
+    pub fn with_speaker_info(mut self, name: String, email: String) -> Self {
+        self.speaker_name = name;
+        self.speaker_email = email;
         self
     }
 }

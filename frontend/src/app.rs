@@ -1,10 +1,10 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-use crate::components::protected_route::ProtectedRoute;
+use crate::components::{protected_route::ProtectedRoute, organizer_route::OrganizerRoute};
 use crate::pages::{
     home::Home, login::Login, my_talks::MyTalks, not_found::NotFound, signup::Signup,
-    submit_talk::SubmitTalk,
+    submit_talk::SubmitTalk, organizer_talks::OrganizerTalks,
 };
 use crate::services::auth::AuthService;
 
@@ -20,6 +20,8 @@ pub enum Route {
     SubmitTalk,
     #[at("/talks/mine")]
     MyTalks,
+    #[at("/organizer/talks")]
+    OrganizerTalks,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -40,6 +42,11 @@ fn switch(routes: Route) -> Html {
                 <MyTalks />
             </ProtectedRoute>
         },
+        Route::OrganizerTalks => html! {
+            <OrganizerRoute>
+                <OrganizerTalks />
+            </OrganizerRoute>
+        },
         Route::NotFound => html! { <NotFound /> },
     }
 }
@@ -47,23 +54,28 @@ fn switch(routes: Route) -> Html {
 #[function_component(AppContent)]
 fn app_content() -> Html {
     let is_authenticated = use_state(|| AuthService::is_authenticated());
+    let is_organizer = use_state(|| AuthService::is_organizer());
     let navigator = use_navigator().unwrap();
 
     // Check authentication status on mount and when it might change
     {
         let is_authenticated = is_authenticated.clone();
+        let is_organizer = is_organizer.clone();
         use_effect_with((), move |_| {
             is_authenticated.set(AuthService::is_authenticated());
+            is_organizer.set(AuthService::is_organizer());
             || ()
         });
     }
 
     let on_logout = {
         let is_authenticated = is_authenticated.clone();
+        let is_organizer = is_organizer.clone();
         let navigator = navigator.clone();
         Callback::from(move |_| {
             AuthService::logout();
             is_authenticated.set(false);
+            is_organizer.set(false);
             navigator.push(&Route::Home);
         })
     };
@@ -78,6 +90,9 @@ fn app_content() -> Html {
                         <>
                             <Link<Route> to={Route::MyTalks}>{ "My Talks" }</Link<Route>>
                             <Link<Route> to={Route::SubmitTalk}>{ "Submit Talk" }</Link<Route>>
+                            if *is_organizer {
+                                <Link<Route> to={Route::OrganizerTalks}>{ "Review Talks" }</Link<Route>>
+                            }
                             <button onclick={on_logout} class="logout-button">{ "Logout" }</button>
                         </>
                     } else {

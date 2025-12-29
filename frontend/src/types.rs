@@ -68,6 +68,8 @@ pub struct Talk {
     pub submitted_at: String,
     pub updated_at: String,
     pub labels: Vec<Label>,
+    pub speaker_name: String,
+    pub speaker_email: String,
 }
 
 #[derive(Debug, Serialize)]

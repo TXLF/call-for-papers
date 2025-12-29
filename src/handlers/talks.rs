@@ -1,9 +1,10 @@
 use axum::{
-    extract::{Multipart, Path, State},
+    extract::{Multipart, Path, Query, State},
     http::StatusCode,
     Extension, Json,
 };
 use chrono::Utc;
+use serde::Deserialize;
 use std::path::PathBuf;
 use uuid::Uuid;
 
@@ -14,6 +15,11 @@ use crate::{
         TalkState, UpdateTalkRequest, RespondToTalkRequest, TalkAction, User,
     },
 };
+
+#[derive(Debug, Deserialize)]
+pub struct ListTalksQuery {
+    pub state: Option<String>,
+}
 
 /// Helper function to fetch labels for a talk
 async fn fetch_talk_labels(
@@ -606,4 +612,88 @@ pub async fn respond_to_talk(
     })?;
 
     Ok(Json(TalkResponse::from(updated_talk)))
+}
+
+/// List all talks (organizer-only) with optional state filtering
+pub async fn list_all_talks(
+    State(state): State<AppState>,
+    Query(query): Query<ListTalksQuery>,
+) -> Result<Json<Vec<TalkResponse>>, (StatusCode, Json<ErrorResponse>)> {
+    // Build query with optional state filtering
+    let talks = if let Some(state_filter) = query.state {
+        // Parse the state filter
+        let talk_state = match state_filter.to_lowercase().as_str() {
+            "submitted" => TalkState::Submitted,
+            "pending" => TalkState::Pending,
+            "accepted" => TalkState::Accepted,
+            "rejected" => TalkState::Rejected,
+            _ => {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorResponse::new("Invalid state filter. Use: submitted, pending, accepted, or rejected")),
+                ));
+            }
+        };
+
+        sqlx::query_as::<_, Talk>(
+            r#"
+            SELECT t.* FROM talks t
+            WHERE t.state = $1
+            ORDER BY t.submitted_at DESC
+            "#,
+        )
+        .bind(talk_state)
+        .fetch_all(&state.db)
+        .await
+    } else {
+        sqlx::query_as::<_, Talk>(
+            r#"
+            SELECT t.* FROM talks t
+            ORDER BY t.submitted_at DESC
+            "#,
+        )
+        .fetch_all(&state.db)
+        .await
+    }
+    .map_err(|e| {
+        tracing::error!("Database error fetching talks: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to fetch talks")),
+        )
+    })?;
+
+    // Fetch speaker info and labels for each talk
+    let mut responses = Vec::new();
+    for talk in talks {
+        // Fetch speaker info
+        let speaker: (String, String) = sqlx::query_as(
+            r#"
+            SELECT full_name, email FROM users
+            WHERE id = $1
+            "#,
+        )
+        .bind(talk.speaker_id)
+        .fetch_one(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching speaker: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to fetch speaker information")),
+            )
+        })?;
+
+        // Fetch labels
+        let labels = fetch_talk_labels(&state.db, talk.id).await.unwrap_or_default();
+
+        // Build response with speaker info and labels
+        let response = TalkResponse::from(talk)
+            .with_speaker_info(speaker.0, speaker.1)
+            .with_labels(labels);
+
+        responses.push(response);
+    }
+
+    Ok(Json(responses))
 }

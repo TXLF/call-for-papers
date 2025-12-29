@@ -191,4 +191,36 @@ impl TalkService {
             Err(error.error)
         }
     }
+
+    /// List all talks (organizer-only) with optional state filtering
+    pub async fn list_all_talks(state_filter: Option<String>) -> Result<Vec<Talk>, String> {
+        let token = AuthService::get_token().ok_or("Not authenticated")?;
+
+        // Build URL with optional query parameter
+        let url = if let Some(state) = state_filter {
+            format!("/api/talks?state={}", state)
+        } else {
+            "/api/talks".to_string()
+        };
+
+        let response = Request::get(&url)
+            .header("Authorization", &format!("Bearer {}", token))
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            let talks = response
+                .json::<Vec<Talk>>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+            Ok(talks)
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
 }
