@@ -9,3 +9,4 @@ pub mod organizer_talks;
 pub mod organizer_dashboard;
 pub mod organizer_labels;
 pub mod ratings_dashboard;
+pub mod manage_tracks;

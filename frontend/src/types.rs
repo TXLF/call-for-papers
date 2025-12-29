@@ -203,3 +203,28 @@ pub struct RecentTalk {
     pub rating_count: Option<i64>,
     pub average_rating: Option<f64>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Track {
+    pub id: String,
+    pub conference_id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub capacity: Option<i32>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateTrackRequest {
+    pub conference_id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub capacity: Option<i32>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateTrackRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub capacity: Option<i32>,
+}

@@ -54,6 +54,10 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/talks/:id/rate/mine", get(handlers::get_my_rating))
         .route("/talks/:id/rate", delete(handlers::delete_rating))
         .route("/ratings/statistics", get(handlers::get_ratings_statistics))
+        // Track routes (organizer only for CUD operations)
+        .route("/tracks", post(handlers::create_track))
+        .route("/tracks/:id", put(handlers::update_track))
+        .route("/tracks/:id", delete(handlers::delete_track))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth_middleware,
@@ -69,6 +73,9 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/auth/login", post(handlers::login))
         // Public label routes
         .route("/labels", get(handlers::list_labels))
+        // Public track routes (read-only)
+        .route("/tracks", get(handlers::list_tracks))
+        .route("/tracks/:id", get(handlers::get_track))
         .merge(protected_routes)
         .merge(organizer_routes)
         .with_state(state);

@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     api::AppState,
-    models::{ErrorResponse, TalkState},
+    models::{auth::ErrorResponse, TalkState},
 };
 
 #[derive(Debug, Serialize)]
@@ -56,7 +56,14 @@ pub async fn get_dashboard_stats(
     // Get total talks count
     let total_talks: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM talks")
         .fetch_one(&state.db)
-        .await?;
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching total talks: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to fetch statistics")),
+            )
+        })?;
 
     // Get talks by state
     let state_counts: Vec<(TalkState, i64)> = sqlx::query_as(
@@ -67,7 +74,14 @@ pub async fn get_dashboard_stats(
         "#,
     )
     .fetch_all(&state.db)
-    .await?;
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error fetching talks by state: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to fetch statistics")),
+        )
+    })?;
 
     let mut talks_by_state = TalksByState {
         submitted: 0,
@@ -97,7 +111,14 @@ pub async fn get_dashboard_stats(
         "#,
     )
     .fetch_one(&state.db)
-    .await?;
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error fetching rating statistics: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to fetch statistics")),
+        )
+    })?;
 
     let rating_stats = RatingStats {
         total_ratings: rating_stats_row.0,
@@ -126,7 +147,14 @@ pub async fn get_dashboard_stats(
         "#,
     )
     .fetch_all(&state.db)
-    .await?;
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error fetching recent submissions: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to fetch statistics")),
+        )
+    })?;
 
     // Unrated talks count
     let unrated_talks = rating_stats.talks_without_ratings;
