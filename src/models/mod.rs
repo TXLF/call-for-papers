@@ -4,4 +4,4 @@ pub mod talk;
 
 pub use user::User;
 pub use auth::{RegisterRequest, LoginRequest, AuthResponse, Claims};
-pub use talk::{Talk, TalkState, CreateTalkRequest, UpdateTalkRequest, TalkResponse};
+pub use talk::{Talk, TalkState, CreateTalkRequest, UpdateTalkRequest, TalkResponse, RespondToTalkRequest, TalkAction};

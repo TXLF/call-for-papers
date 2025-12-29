@@ -161,4 +161,34 @@ impl TalkService {
             Err(error.error)
         }
     }
+
+    pub async fn respond_to_talk(id: &str, action: &str) -> Result<Talk, String> {
+        let token = AuthService::get_token().ok_or("Not authenticated")?;
+
+        let request = crate::types::RespondToTalkRequest {
+            action: action.to_string(),
+        };
+
+        let response = Request::post(&format!("/api/talks/{}/respond", id))
+            .header("Authorization", &format!("Bearer {}", token))
+            .json(&request)
+            .map_err(|e| format!("Failed to serialize request: {}", e))?
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            let talk = response
+                .json::<Talk>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+            Ok(talk)
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
 }

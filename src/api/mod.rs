@@ -30,6 +30,7 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/talks/:id", put(handlers::update_talk))
         .route("/talks/:id", delete(handlers::delete_talk))
         .route("/talks/:id/upload-slides", post(handlers::upload_slides))
+        .route("/talks/:id/respond", post(handlers::respond_to_talk))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth_middleware,

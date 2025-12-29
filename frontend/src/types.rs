@@ -73,3 +73,8 @@ pub struct UpdateTalkRequest {
     pub long_description: Option<String>,
     pub slides_url: Option<String>,
 }
+
+#[derive(Debug, Serialize)]
+pub struct RespondToTalkRequest {
+    pub action: String,
+}

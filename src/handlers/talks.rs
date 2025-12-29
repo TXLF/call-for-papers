@@ -11,7 +11,7 @@ use crate::{
     api::AppState,
     models::{
         auth::ErrorResponse, CreateTalkRequest, Talk, TalkResponse, TalkState, UpdateTalkRequest,
-        User,
+        RespondToTalkRequest, TalkAction, User,
     },
 };
 
@@ -466,6 +466,90 @@ pub async fn upload_slides(
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ErrorResponse::new("Failed to update talk")),
+        )
+    })?;
+
+    Ok(Json(TalkResponse::from(updated_talk)))
+}
+
+/// Respond to a pending talk (accept or decline)
+pub async fn respond_to_talk(
+    State(state): State<AppState>,
+    Extension(user): Extension<User>,
+    Path(talk_id): Path<Uuid>,
+    Json(payload): Json<RespondToTalkRequest>,
+) -> Result<Json<TalkResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // Fetch the talk to verify existence and ownership
+    let talk = sqlx::query_as::<_, Talk>(
+        r#"
+        SELECT * FROM talks
+        WHERE id = $1
+        "#,
+    )
+    .bind(talk_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error fetching talk: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to fetch talk")),
+        )
+    })?;
+
+    let talk = talk.ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new("Talk not found")),
+        )
+    })?;
+
+    // Verify ownership - only the speaker can respond
+    if talk.speaker_id != user.id {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(ErrorResponse::new(
+                "You can only respond to your own talk submissions",
+            )),
+        ));
+    }
+
+    // Verify the talk is in pending state
+    if !matches!(talk.state, TalkState::Pending) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse::new(
+                "You can only respond to talks in pending state",
+            )),
+        ));
+    }
+
+    // Determine the new state based on action
+    let new_state = match payload.action {
+        TalkAction::Accept => TalkState::Accepted,
+        TalkAction::Decline => TalkState::Rejected,
+    };
+
+    // Update the talk state
+    let updated_talk = sqlx::query_as::<_, Talk>(
+        r#"
+        UPDATE talks
+        SET state = $1,
+            updated_at = $2
+        WHERE id = $3
+        RETURNING *
+        "#,
+    )
+    .bind(new_state)
+    .bind(Utc::now())
+    .bind(talk_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error updating talk state: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to update talk state")),
         )
     })?;
 

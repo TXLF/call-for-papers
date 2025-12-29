@@ -40,6 +40,18 @@ pub struct UpdateTalkRequest {
     pub slides_url: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct RespondToTalkRequest {
+    pub action: TalkAction,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TalkAction {
+    Accept,
+    Decline,
+}
+
 #[derive(Debug, Serialize)]
 pub struct TalkResponse {
     pub id: Uuid,
