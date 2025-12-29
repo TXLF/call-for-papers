@@ -42,6 +42,7 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
 
     // Organizer-only routes
     let organizer_routes = Router::new()
+        .route("/dashboard/stats", get(handlers::get_dashboard_stats))
         .route("/talks", get(handlers::list_all_talks))
         .route("/talks/:id/state", put(handlers::change_talk_state))
         .route("/labels", post(handlers::create_label))

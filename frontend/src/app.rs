@@ -4,7 +4,8 @@ use yew_router::prelude::*;
 use crate::components::{protected_route::ProtectedRoute, organizer_route::OrganizerRoute};
 use crate::pages::{
     home::Home, login::Login, my_talks::MyTalks, not_found::NotFound, signup::Signup,
-    submit_talk::SubmitTalk, organizer_talks::OrganizerTalks, ratings_dashboard::RatingsDashboard,
+    submit_talk::SubmitTalk, organizer_talks::OrganizerTalks, organizer_dashboard::OrganizerDashboard,
+    ratings_dashboard::RatingsDashboard,
 };
 use crate::services::auth::AuthService;
 
@@ -20,6 +21,8 @@ pub enum Route {
     SubmitTalk,
     #[at("/talks/mine")]
     MyTalks,
+    #[at("/organizer/dashboard")]
+    OrganizerDashboard,
     #[at("/organizer/talks")]
     OrganizerTalks,
     #[at("/organizer/ratings")]
@@ -43,6 +46,11 @@ fn switch(routes: Route) -> Html {
             <ProtectedRoute>
                 <MyTalks />
             </ProtectedRoute>
+        },
+        Route::OrganizerDashboard => html! {
+            <OrganizerRoute>
+                <OrganizerDashboard />
+            </OrganizerRoute>
         },
         Route::OrganizerTalks => html! {
             <OrganizerRoute>
@@ -98,6 +106,7 @@ fn app_content() -> Html {
                             <Link<Route> to={Route::MyTalks}>{ "My Talks" }</Link<Route>>
                             <Link<Route> to={Route::SubmitTalk}>{ "Submit Talk" }</Link<Route>>
                             if *is_organizer {
+                                <Link<Route> to={Route::OrganizerDashboard}>{ "Dashboard" }</Link<Route>>
                                 <Link<Route> to={Route::OrganizerTalks}>{ "Review Talks" }</Link<Route>>
                                 <Link<Route> to={Route::RatingsDashboard}>{ "Ratings Dashboard" }</Link<Route>>
                             }

@@ -153,3 +153,39 @@ pub struct RatingDistribution {
     pub four_star: i64,
     pub five_star: i64,
 }
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct DashboardStats {
+    pub total_talks: i64,
+    pub talks_by_state: TalksByState,
+    pub rating_stats: RatingStats,
+    pub recent_submissions: Vec<RecentTalk>,
+    pub unrated_talks: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct TalksByState {
+    pub submitted: i64,
+    pub pending: i64,
+    pub accepted: i64,
+    pub rejected: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct RatingStats {
+    pub total_ratings: i64,
+    pub average_rating: Option<f64>,
+    pub talks_with_ratings: i64,
+    pub talks_without_ratings: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct RecentTalk {
+    pub id: String,
+    pub title: String,
+    pub speaker_name: String,
+    pub state: TalkState,
+    pub submitted_at: String,
+    pub rating_count: Option<i64>,
+    pub average_rating: Option<f64>,
+}
