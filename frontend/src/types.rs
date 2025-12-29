@@ -97,3 +97,22 @@ pub struct RespondToTalkRequest {
 pub struct AddLabelToTalkRequest {
     pub label_ids: Vec<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Rating {
+    pub id: String,
+    pub talk_id: String,
+    pub organizer_id: String,
+    pub organizer_name: String,
+    pub organizer_email: String,
+    pub rating: i32,
+    pub notes: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateRatingRequest {
+    pub rating: i32,
+    pub notes: Option<String>,
+}
