@@ -1,0 +1,44 @@
+# Call for Papers - Docker Compose Systemd Service
+# This service file runs the application using Docker Compose
+#
+# Installation:
+# 1. Copy this file to /etc/systemd/system/call-for-papers-docker.service
+# 2. Update the paths as needed
+# 3. Run: sudo systemctl daemon-reload
+# 4. Run: sudo systemctl enable call-for-papers-docker
+# 5. Run: sudo systemctl start call-for-papers-docker
+
+[Unit]
+Description=Call for Papers - Conference Management System (Docker)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/call-for-papers
+
+# Start all services
+ExecStart=/usr/bin/docker-compose -f compose.prod.yaml up -d
+
+# Stop all services
+ExecStop=/usr/bin/docker-compose -f compose.prod.yaml down
+
+# Restart services
+ExecReload=/usr/bin/docker-compose -f compose.prod.yaml restart
+
+# Restart policy
+Restart=on-failure
+RestartSec=10
+
+# Timeout for startup (Docker may take time to pull images)
+TimeoutStartSec=600
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=call-for-papers-docker
+
+[Install]
+WantedBy=multi-user.target

@@ -12,3 +12,8 @@ frontend/.trunk
 
 # Uploaded files
 uploads/
+
+# Backups
+backups/
+*.sql
+*.sql.gz

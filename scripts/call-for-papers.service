@@ -1,0 +1,49 @@
+# Call for Papers - Systemd Service File
+# This service file runs the application as a native binary (non-containerized)
+#
+# Installation:
+# 1. Copy this file to /etc/systemd/system/call-for-papers.service
+# 2. Update the paths and user/group as needed
+# 3. Run: sudo systemctl daemon-reload
+# 4. Run: sudo systemctl enable call-for-papers
+# 5. Run: sudo systemctl start call-for-papers
+
+[Unit]
+Description=Call for Papers - Conference Management System
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=cfp
+Group=cfp
+WorkingDirectory=/opt/call-for-papers
+
+# Binary location
+ExecStart=/opt/call-for-papers/call-for-papers
+
+# Environment file (contains DATABASE_URL, JWT_SECRET, etc.)
+EnvironmentFile=/opt/call-for-papers/.env
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/call-for-papers/uploads
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=call-for-papers
+
+# Resource limits (adjust as needed)
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

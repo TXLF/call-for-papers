@@ -1,0 +1,89 @@
+version: '3.8'
+
+# Production Docker Compose configuration
+# This file is intended for production deployments with proper security and persistence
+
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    container_name: cfp-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-call_for_papers}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - cfp-internal
+
+  backend:
+    image: ghcr.io/txlf/call-for-papers:latest
+    container_name: cfp-backend
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-call_for_papers}
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-24}
+      RUST_LOG: ${RUST_LOG:-call_for_papers=info,tower_http=info,sqlx=warn}
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: always
+    networks:
+      - cfp-internal
+      - cfp-external
+
+  # Optional: Automated PostgreSQL backups
+  backup:
+    image: docker.io/prodrigestivill/postgres-backup-local:16-alpine
+    container_name: cfp-backup
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-call_for_papers}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+      HEALTHCHECK_PORT: 8080
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    networks:
+      - cfp-internal
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads:
+    driver: local
+
+networks:
+  cfp-internal:
+    driver: bridge
+    internal: true
+  cfp-external:
+    driver: bridge
