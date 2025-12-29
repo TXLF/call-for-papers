@@ -78,8 +78,8 @@ The system uses a configuration file to support different conferences:
 
 - Rust (latest stable version)
 - PostgreSQL 12+
-- Node.js and npm (for WASM tooling)
-- wasm-pack
+- Trunk (WASM build tool: `cargo install trunk`)
+- wasm32-unknown-unknown target (`rustup target add wasm32-unknown-unknown`)
 
 ### Installation
 
@@ -112,6 +112,54 @@ cp config.example.toml config.toml
 
 ## Development
 
+### Quick Start with Make
+
+The project includes a Makefile for convenience:
+
+```bash
+# Install dependencies (Trunk, WASM target)
+make install
+
+# Build everything
+make build
+
+# Run with hot-reload frontend
+make dev-frontend
+
+# Run backend
+make run
+
+# Run tests
+make test
+
+# See all available commands
+make help
+```
+
+### Running the Development Environment
+
+For frontend development with hot-reload:
+
+```bash
+cd frontend
+trunk serve
+```
+
+This will serve the frontend at `http://127.0.0.1:8000` with auto-reload on changes.
+
+For full-stack development:
+
+```bash
+# Terminal 1: Build frontend for production
+cd frontend
+trunk build --release
+
+# Terminal 2: Run backend (from project root)
+cargo run
+```
+
+Access the application at `http://localhost:8080`
+
 ### Running Tests
 
 ```bash
@@ -129,7 +177,12 @@ wasm-pack test --headless --firefox
 ### Building for Production
 
 ```bash
-# Build optimized release
+# Build the frontend
+cd frontend
+trunk build --release
+cd ..
+
+# Build the backend (which serves the frontend)
 cargo build --release
 
 # The binary will be available at target/release/call-for-papers
