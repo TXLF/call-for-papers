@@ -14,7 +14,8 @@ This directory contains scripts and configuration files for deploying and managi
 
 ### Configuration Files
 
-- **`nginx.conf`** - Nginx reverse proxy configuration with SSL
+- **`envoy.yaml`** - Envoy proxy configuration with SSL, rate limiting, and observability
+- **`nginx.conf`** - Legacy nginx configuration (deprecated, use Envoy instead)
 - **`call-for-papers.service`** - Systemd service for native binary deployment
 - **`call-for-papers-docker.service`** - Systemd service for Docker Compose deployment
 
@@ -42,19 +43,14 @@ This directory contains scripts and configuration files for deploying and managi
    sudo ./scripts/deploy.sh
    ```
 
-3. **Setup Nginx reverse proxy:**
+3. **Configure Envoy proxy:**
    ```bash
-   sudo apt-get install -y nginx
-   sudo cp scripts/nginx.conf /etc/nginx/sites-available/call-for-papers
-
-   # Edit the file and update server_name
-   sudo nano /etc/nginx/sites-available/call-for-papers
-
-   # Enable site
-   sudo ln -s /etc/nginx/sites-available/call-for-papers /etc/nginx/sites-enabled/
-   sudo nginx -t
-   sudo systemctl reload nginx
+   # Edit envoy.yaml and update the domain name
+   nano /opt/call-for-papers/scripts/envoy.yaml
+   # Change cfp.example.com to your actual domain
    ```
+
+   **Note:** Envoy runs as a Docker container and is automatically started with the production stack. No separate installation needed!
 
 4. **Setup SSL:**
    ```bash
@@ -189,12 +185,41 @@ sudo journalctl -u call-for-papers -f
 ### Health checks
 
 ```bash
-# Basic health
+# Basic health (through Envoy)
+curl https://your-domain.com/api/health
+
+# Or directly to backend
 curl http://localhost:8080/api/health
 
 # Database health
 curl http://localhost:8080/api/health/db
+
+# Envoy health
+curl http://localhost:9901/ready
+
+# Envoy stats and metrics
+curl http://localhost:9901/stats
 ```
+
+### Envoy Admin Interface
+
+Envoy provides a powerful admin interface on port 9901:
+
+```bash
+# Access admin interface
+http://localhost:9901
+
+# Available endpoints:
+# /stats - Detailed statistics and metrics
+# /stats/prometheus - Prometheus-formatted metrics
+# /clusters - Upstream cluster information
+# /config_dump - Current configuration
+# /ready - Readiness check
+# /server_info - Server information
+# /logging - Dynamic log level control
+```
+
+**Note:** In production, restrict access to port 9901 to localhost only (already configured in compose.prod.yaml).
 
 ## Security Considerations
 
@@ -215,7 +240,7 @@ curl http://localhost:8080/api/health/db
 3. **SSL/TLS:**
    - Always use HTTPS in production
    - Keep certificates up to date (certbot handles this automatically)
-   - Use strong cipher suites (configured in nginx.conf)
+   - Use strong cipher suites (configured in envoy.yaml)
 
 4. **Application Security:**
    - Generate a strong JWT secret (minimum 32 characters)
@@ -253,8 +278,9 @@ sudo certbot certificates
 # Renew certificates manually
 sudo certbot renew
 
-# Test nginx configuration
-sudo nginx -t
+# Restart Envoy to load new certificates
+cd /opt/call-for-papers
+docker-compose -f compose.prod.yaml restart envoy
 ```
 
 ## Maintenance

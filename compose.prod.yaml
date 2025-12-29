@@ -36,8 +36,6 @@ services:
       UPLOAD_DIR: /app/uploads
     volumes:
       - uploads:/app/uploads
-    ports:
-      - "${APP_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,6 +45,30 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
+    restart: always
+    networks:
+      - cfp-internal
+
+  envoy:
+    image: docker.io/envoyproxy/envoy:v1.28-latest
+    container_name: cfp-envoy
+    volumes:
+      - ./scripts/envoy.yaml:/etc/envoy/envoy.yaml:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
+    ports:
+      - "80:80"
+      - "443:443"
+      - "${ENVOY_ADMIN_PORT:-9901}:9901"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9901/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     restart: always
     networks:
       - cfp-internal
@@ -79,6 +101,8 @@ volumes:
   postgres_data:
     driver: local
   uploads:
+    driver: local
+  certbot-webroot:
     driver: local
 
 networks:
