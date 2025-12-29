@@ -1,5 +1,5 @@
 use gloo_net::http::Request;
-use crate::{services::auth::AuthService, types::{ScheduleSlot, ErrorResponse, CreateScheduleSlotRequest, UpdateScheduleSlotRequest}};
+use crate::{services::auth::AuthService, types::{ScheduleSlot, ErrorResponse, CreateScheduleSlotRequest, UpdateScheduleSlotRequest, AssignTalkRequest}};
 
 pub struct ScheduleSlotService;
 
@@ -110,6 +110,56 @@ impl ScheduleSlotService {
 
         if response.ok() {
             Ok(())
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
+
+    /// Assign a talk to a schedule slot (organizer only)
+    pub async fn assign_talk_to_slot(slot_id: &str, request: AssignTalkRequest) -> Result<ScheduleSlot, String> {
+        let token = AuthService::get_token().ok_or("Not authenticated")?;
+
+        let response = Request::put(&format!("/api/schedule-slots/{}/assign", slot_id))
+            .header("Authorization", &format!("Bearer {}", token))
+            .json(&request)
+            .map_err(|e| format!("Failed to serialize request: {}", e))?
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            response
+                .json::<ScheduleSlot>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
+
+    /// Unassign a talk from a schedule slot (organizer only)
+    pub async fn unassign_talk_from_slot(slot_id: &str) -> Result<ScheduleSlot, String> {
+        let token = AuthService::get_token().ok_or("Not authenticated")?;
+
+        let response = Request::delete(&format!("/api/schedule-slots/{}/assign", slot_id))
+            .header("Authorization", &format!("Bearer {}", token))
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            response
+                .json::<ScheduleSlot>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))
         } else {
             let error = response
                 .json::<ErrorResponse>()

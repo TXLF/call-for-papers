@@ -9,8 +9,8 @@ use uuid::Uuid;
 use crate::{
     api::AppState,
     models::{
-        auth::ErrorResponse, CreateScheduleSlotRequest, ScheduleSlot, ScheduleSlotResponse,
-        UpdateScheduleSlotRequest,
+        auth::ErrorResponse, AssignTalkRequest, CreateScheduleSlotRequest, ScheduleSlot,
+        ScheduleSlotResponse, UpdateScheduleSlotRequest,
     },
 };
 
@@ -244,4 +244,111 @@ pub async fn delete_schedule_slot(
 
     tracing::info!("Schedule slot deleted: {}", slot_id);
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// Assign a talk to a schedule slot (organizer only)
+pub async fn assign_talk_to_slot(
+    State(state): State<AppState>,
+    Path(slot_id): Path<Uuid>,
+    Json(payload): Json<AssignTalkRequest>,
+) -> Result<Json<ScheduleSlotResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // Verify the slot exists
+    let existing_slot = sqlx::query_as::<_, ScheduleSlot>(
+        r#"
+        SELECT * FROM schedule_slots
+        WHERE id = $1
+        "#,
+    )
+    .bind(slot_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error fetching schedule slot: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to fetch schedule slot")),
+        )
+    })?;
+
+    if existing_slot.is_none() {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new("Schedule slot not found")),
+        ));
+    }
+
+    // Update the slot with the talk assignment
+    let updated_slot = sqlx::query_as::<_, ScheduleSlot>(
+        r#"
+        UPDATE schedule_slots
+        SET talk_id = $1, updated_at = $2
+        WHERE id = $3
+        RETURNING *
+        "#,
+    )
+    .bind(payload.talk_id)
+    .bind(Utc::now())
+    .bind(slot_id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error assigning talk to slot: {}", e);
+        // Check for foreign key violation (invalid talk_id)
+        if let Some(db_err) = e.as_database_error() {
+            if db_err.message().contains("foreign key") {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorResponse::new("Invalid talk ID")),
+                );
+            }
+        }
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to assign talk to slot")),
+        )
+    })?;
+
+    tracing::info!(
+        "Talk {} assigned to schedule slot {}",
+        payload.talk_id,
+        slot_id
+    );
+    Ok(Json(ScheduleSlotResponse::from(updated_slot)))
+}
+
+/// Unassign a talk from a schedule slot (organizer only)
+pub async fn unassign_talk_from_slot(
+    State(state): State<AppState>,
+    Path(slot_id): Path<Uuid>,
+) -> Result<Json<ScheduleSlotResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // Update the slot to remove talk assignment
+    let updated_slot = sqlx::query_as::<_, ScheduleSlot>(
+        r#"
+        UPDATE schedule_slots
+        SET talk_id = NULL, updated_at = $1
+        WHERE id = $2
+        RETURNING *
+        "#,
+    )
+    .bind(Utc::now())
+    .bind(slot_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error unassigning talk from slot: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to unassign talk from slot")),
+        )
+    })?;
+
+    let updated_slot = updated_slot.ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new("Schedule slot not found")),
+        )
+    })?;
+
+    tracing::info!("Talk unassigned from schedule slot {}", slot_id);
+    Ok(Json(ScheduleSlotResponse::from(updated_slot)))
 }

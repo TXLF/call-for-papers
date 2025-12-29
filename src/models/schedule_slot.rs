@@ -34,6 +34,11 @@ pub struct UpdateScheduleSlotRequest {
     pub end_time: Option<NaiveTime>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct AssignTalkRequest {
+    pub talk_id: Uuid,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ScheduleSlotResponse {
     pub id: Uuid,

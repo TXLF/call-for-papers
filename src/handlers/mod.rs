@@ -12,4 +12,4 @@ pub use labels::{list_labels, create_label, update_label, delete_label, get_talk
 pub use ratings::{create_or_update_rating, get_talk_ratings, delete_rating, get_my_rating, get_ratings_statistics};
 pub use dashboard::get_dashboard_stats;
 pub use tracks::{list_tracks, get_track, create_track, update_track, delete_track};
-pub use schedule_slots::{list_schedule_slots, get_schedule_slot, create_schedule_slot, update_schedule_slot, delete_schedule_slot};
+pub use schedule_slots::{list_schedule_slots, get_schedule_slot, create_schedule_slot, update_schedule_slot, delete_schedule_slot, assign_talk_to_slot, unassign_talk_from_slot};

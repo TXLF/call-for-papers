@@ -62,6 +62,8 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/schedule-slots", post(handlers::create_schedule_slot))
         .route("/schedule-slots/:id", put(handlers::update_schedule_slot))
         .route("/schedule-slots/:id", delete(handlers::delete_schedule_slot))
+        .route("/schedule-slots/:id/assign", put(handlers::assign_talk_to_slot))
+        .route("/schedule-slots/:id/assign", delete(handlers::unassign_talk_from_slot))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth_middleware,

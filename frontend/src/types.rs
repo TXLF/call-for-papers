@@ -259,3 +259,8 @@ pub struct UpdateScheduleSlotRequest {
     pub start_time: Option<String>,
     pub end_time: Option<String>,
 }
+
+#[derive(Debug, Serialize)]
+pub struct AssignTalkRequest {
+    pub talk_id: String,
+}
