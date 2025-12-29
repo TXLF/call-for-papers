@@ -16,6 +16,17 @@ pub fn login() -> Html {
     let error = use_state(|| None::<String>);
     let loading = use_state(|| false);
 
+    // Redirect to home if already authenticated
+    {
+        let navigator = navigator.clone();
+        use_effect_with((), move |_| {
+            if AuthService::is_authenticated() {
+                navigator.push(&Route::Home);
+            }
+            || ()
+        });
+    }
+
     let email_clone = email.clone();
     let on_email_change = Callback::from(move |e: Event| {
         let input: HtmlInputElement = e.target_unchecked_into();

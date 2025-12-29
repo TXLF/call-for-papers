@@ -1,10 +1,12 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+use crate::components::protected_route::ProtectedRoute;
 use crate::pages::{
     home::Home, login::Login, my_talks::MyTalks, not_found::NotFound, signup::Signup,
     submit_talk::SubmitTalk,
 };
+use crate::services::auth::AuthService;
 
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
@@ -28,9 +30,68 @@ fn switch(routes: Route) -> Html {
         Route::Home => html! { <Home /> },
         Route::Login => html! { <Login /> },
         Route::Signup => html! { <Signup /> },
-        Route::SubmitTalk => html! { <SubmitTalk /> },
-        Route::MyTalks => html! { <MyTalks /> },
+        Route::SubmitTalk => html! {
+            <ProtectedRoute>
+                <SubmitTalk />
+            </ProtectedRoute>
+        },
+        Route::MyTalks => html! {
+            <ProtectedRoute>
+                <MyTalks />
+            </ProtectedRoute>
+        },
         Route::NotFound => html! { <NotFound /> },
+    }
+}
+
+#[function_component(AppContent)]
+fn app_content() -> Html {
+    let is_authenticated = use_state(|| AuthService::is_authenticated());
+    let navigator = use_navigator().unwrap();
+
+    // Check authentication status on mount and when it might change
+    {
+        let is_authenticated = is_authenticated.clone();
+        use_effect_with((), move |_| {
+            is_authenticated.set(AuthService::is_authenticated());
+            || ()
+        });
+    }
+
+    let on_logout = {
+        let is_authenticated = is_authenticated.clone();
+        let navigator = navigator.clone();
+        Callback::from(move |_| {
+            AuthService::logout();
+            is_authenticated.set(false);
+            navigator.push(&Route::Home);
+        })
+    };
+
+    html! {
+        <div id="app">
+            <header>
+                <h1>{ "Call for Papers" }</h1>
+                <nav>
+                    <Link<Route> to={Route::Home}>{ "Home" }</Link<Route>>
+                    if *is_authenticated {
+                        <>
+                            <Link<Route> to={Route::MyTalks}>{ "My Talks" }</Link<Route>>
+                            <Link<Route> to={Route::SubmitTalk}>{ "Submit Talk" }</Link<Route>>
+                            <button onclick={on_logout} class="logout-button">{ "Logout" }</button>
+                        </>
+                    } else {
+                        <>
+                            <Link<Route> to={Route::Login}>{ "Login" }</Link<Route>>
+                            <Link<Route> to={Route::Signup}>{ "Sign Up" }</Link<Route>>
+                        </>
+                    }
+                </nav>
+            </header>
+            <main>
+                <Switch<Route> render={switch} />
+            </main>
+        </div>
     }
 }
 
@@ -38,21 +99,7 @@ fn switch(routes: Route) -> Html {
 pub fn app() -> Html {
     html! {
         <BrowserRouter>
-            <div id="app">
-                <header>
-                    <h1>{ "Call for Papers" }</h1>
-                    <nav>
-                        <Link<Route> to={Route::Home}>{ "Home" }</Link<Route>>
-                        <Link<Route> to={Route::MyTalks}>{ "My Talks" }</Link<Route>>
-                        <Link<Route> to={Route::SubmitTalk}>{ "Submit Talk" }</Link<Route>>
-                        <Link<Route> to={Route::Login}>{ "Login" }</Link<Route>>
-                        <Link<Route> to={Route::Signup}>{ "Sign Up" }</Link<Route>>
-                    </nav>
-                </header>
-                <main>
-                    <Switch<Route> render={switch} />
-                </main>
-            </div>
+            <AppContent />
         </BrowserRouter>
     }
 }

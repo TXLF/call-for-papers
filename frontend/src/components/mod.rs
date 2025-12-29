@@ -1,1 +1,1 @@
-// Components will be defined here
+pub mod protected_route;
