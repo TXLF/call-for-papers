@@ -142,13 +142,42 @@ pub fn my_talks() -> Html {
                                     let is_pending = matches!(talk.state, TalkState::Pending);
                                     let is_responding = (*responding_to).as_ref() == Some(&talk.id);
 
+                                    // State-specific display information
+                                    let (state_icon, state_label, state_help) = match talk.state {
+                                        TalkState::Submitted => (
+                                            "📝",
+                                            "Submitted",
+                                            "Your submission has been received. The organizing team is reviewing all proposals."
+                                        ),
+                                        TalkState::Pending => (
+                                            "⏳",
+                                            "Awaiting Response",
+                                            "Congratulations! Your talk has been selected. Please confirm your attendance or decline below."
+                                        ),
+                                        TalkState::Accepted => (
+                                            "✅",
+                                            "Accepted",
+                                            "Your talk has been confirmed! You'll receive more details about the conference schedule soon."
+                                        ),
+                                        TalkState::Rejected => (
+                                            "❌",
+                                            "Not Selected",
+                                            "Thank you for your submission. While this talk wasn't selected, we encourage you to submit again in the future."
+                                        ),
+                                    };
+
                                     html! {
-                                        <div class="talk-card" key={talk.id.clone()}>
+                                        <div class={classes!("talk-card", state_class.clone())} key={talk.id.clone()}>
                                             <div class="talk-header">
                                                 <h3>{ &talk.title }</h3>
                                                 <span class={classes!("talk-status", state_class)}>
-                                                    { format!("{:?}", talk.state) }
+                                                    <span class="status-icon">{ state_icon }</span>
+                                                    <span class="status-label">{ state_label }</span>
                                                 </span>
+                                            </div>
+
+                                            <div class="talk-status-help">
+                                                { state_help }
                                             </div>
                                             <p class="talk-summary">{ &talk.short_summary }</p>
                                             {
@@ -229,7 +258,22 @@ pub fn my_talks() -> Html {
                                             }
 
                                             <div class="talk-meta">
-                                                <small>{ format!("Submitted: {}", talk.submitted_at) }</small>
+                                                <div class="meta-item">
+                                                    <span class="meta-label">{ "Submitted:" }</span>
+                                                    <span class="meta-value">{ &talk.submitted_at[..10] }</span>
+                                                </div>
+                                                {
+                                                    if talk.updated_at != talk.submitted_at {
+                                                        html! {
+                                                            <div class="meta-item">
+                                                                <span class="meta-label">{ "Last Updated:" }</span>
+                                                                <span class="meta-value">{ &talk.updated_at[..10] }</span>
+                                                            </div>
+                                                        }
+                                                    } else {
+                                                        html! {}
+                                                    }
+                                                }
                                             </div>
                                         </div>
                                     }
