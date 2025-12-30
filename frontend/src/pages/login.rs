@@ -140,6 +140,10 @@ pub fn login() -> Html {
                     <span>{ "Continue with Apple" }</span>
                 </a>
 
+                <a href="/api/auth/facebook" class="oauth-button facebook-button">
+                    <span>{ "Continue with Facebook" }</span>
+                </a>
+
                 <p class="auth-link">
                     { "Don't have an account? " }
                     <Link<Route> to={Route::Signup}>{ "Sign up" }</Link<Route>>

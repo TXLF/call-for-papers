@@ -19,6 +19,9 @@ pub struct Config {
     pub apple_key_id: Option<String>,
     pub apple_private_key: Option<String>,
     pub apple_redirect_url: Option<String>,
+    pub facebook_client_id: Option<String>,
+    pub facebook_client_secret: Option<String>,
+    pub facebook_redirect_url: Option<String>,
 }
 
 impl Config {
@@ -61,6 +64,10 @@ impl Config {
         let apple_private_key = std::env::var("APPLE_PRIVATE_KEY").ok();
         let apple_redirect_url = std::env::var("APPLE_REDIRECT_URL").ok();
 
+        let facebook_client_id = std::env::var("FACEBOOK_CLIENT_ID").ok();
+        let facebook_client_secret = std::env::var("FACEBOOK_CLIENT_SECRET").ok();
+        let facebook_redirect_url = std::env::var("FACEBOOK_REDIRECT_URL").ok();
+
         Ok(Config {
             database_url,
             server_host,
@@ -79,6 +86,9 @@ impl Config {
             apple_key_id,
             apple_private_key,
             apple_redirect_url,
+            facebook_client_id,
+            facebook_client_secret,
+            facebook_redirect_url,
         })
     }
 }

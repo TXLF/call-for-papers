@@ -297,6 +297,17 @@ input:focus, textarea:focus, select:focus {
     border-color: #000000;
 }
 
+.facebook-button {
+    border-color: #1877f2;
+    color: #1877f2;
+    margin-top: 0.75rem;
+}
+
+.facebook-button:hover {
+    background: #f0f7ff;
+    border-color: #1877f2;
+}
+
 /* Talk Cards */
 .talks-container {
     max-width: 1000px;

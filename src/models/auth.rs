@@ -72,6 +72,13 @@ pub struct AppleUserName {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct FacebookUserInfo {
+    pub id: String,  // Facebook user ID
+    pub name: Option<String>,
+    pub email: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct OAuthCallbackQuery {
     pub code: String,
     pub state: Option<String>,

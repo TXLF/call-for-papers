@@ -6,4 +6,24 @@ google oauth flow setup:
   4. Build and run the application
   5. Test the OAuth flow
 
+github oauth flow setup:
+
+  1. Create a GitHub OAuth application at https://github.com/settings/developers
+  2. Set up callback URL: http://localhost:8080/api/auth/github/callback
+  3. Add the credentials to your .env file
+  4. Build and run the application
+  5. Test the OAuth flow
+
+apple oauth flow setup:
+
+  1. Create an Apple Services ID at https://developer.apple.com/account/resources/identifiers/list/serviceId
+  2. Configure Sign in with Apple for your Services ID
+  3. Set up callback URL: http://localhost:8080/api/auth/apple/callback
+  4. Generate a private key in Apple Developer portal
+  5. Add the credentials to your .env file
+  6. Build and run the application
+  7. Test the OAuth flow
+
+facebook oauth flow setup:
+
 

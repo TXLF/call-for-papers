@@ -22,7 +22,7 @@ use uuid::Uuid;
 use crate::{
     api::AppState,
     models::{
-        auth::{AuthProviderType, ErrorResponse, GoogleUserInfo, GitHubUserInfo, GitHubEmail, AppleUserData, OAuthCallbackQuery},
+        auth::{AuthProviderType, ErrorResponse, GoogleUserInfo, GitHubUserInfo, GitHubEmail, AppleUserData, FacebookUserInfo, OAuthCallbackQuery},
         user::UserResponse,
         AuthResponse, Claims, LoginRequest, RegisterRequest, User
     },
@@ -1199,6 +1199,319 @@ pub async fn apple_callback(
             .bind(AuthProviderType::Apple)
             .bind(&apple_user_id)
             .bind(serde_json::json!({
+                "email": email,
+            }))
+            .execute(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to create auth provider")),
+                )
+            })?;
+
+            new_user
+        }
+    };
+
+    // Create session token
+    let token = create_session_token(&state.db, &user, &state.config)
+        .await
+        .map_err(|e| {
+            tracing::error!("Token creation error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to create session")),
+            )
+        })?;
+
+    // Redirect to frontend with token
+    let redirect_url = format!("/auth/callback?token={}", token);
+    Ok(Redirect::to(&redirect_url))
+}
+
+// Facebook OAuth handlers
+
+fn get_facebook_oauth_client(
+    client_id: &str,
+    client_secret: &str,
+    redirect_url: &str,
+) -> Result<BasicClient, anyhow::Error> {
+    let facebook_client_id = ClientId::new(client_id.to_string());
+    let facebook_client_secret = ClientSecret::new(client_secret.to_string());
+    let auth_url = AuthUrl::new("https://www.facebook.com/v18.0/dialog/oauth".to_string())?;
+    let token_url = TokenUrl::new("https://graph.facebook.com/v18.0/oauth/access_token".to_string())?;
+
+    Ok(BasicClient::new(
+        facebook_client_id,
+        Some(facebook_client_secret),
+        auth_url,
+        Some(token_url),
+    )
+    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
+}
+
+pub async fn facebook_authorize(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    // Check if Facebook OAuth is configured
+    let client_id = state
+        .config
+        .facebook_client_id
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Facebook OAuth is not configured")),
+            )
+        })?;
+
+    let client_secret = state
+        .config
+        .facebook_client_secret
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Facebook OAuth is not configured")),
+            )
+        })?;
+
+    let redirect_url = state
+        .config
+        .facebook_redirect_url
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Facebook OAuth is not configured")),
+            )
+        })?;
+
+    let client = get_facebook_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
+        tracing::error!("Failed to create OAuth client: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("OAuth configuration error")),
+        )
+    })?;
+
+    // Generate the authorization URL
+    let (authorize_url, _csrf_token) = client
+        .authorize_url(CsrfToken::new_random)
+        .add_scope(Scope::new("email".to_string()))
+        .add_scope(Scope::new("public_profile".to_string()))
+        .url();
+
+    Ok(Redirect::to(authorize_url.as_str()))
+}
+
+pub async fn facebook_callback(
+    State(state): State<AppState>,
+    Query(query): Query<OAuthCallbackQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    // Check if Facebook OAuth is configured
+    let client_id = state
+        .config
+        .facebook_client_id
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Facebook OAuth is not configured")),
+            )
+        })?;
+
+    let client_secret = state
+        .config
+        .facebook_client_secret
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Facebook OAuth is not configured")),
+            )
+        })?;
+
+    let redirect_url = state
+        .config
+        .facebook_redirect_url
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Facebook OAuth is not configured")),
+            )
+        })?;
+
+    let client = get_facebook_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
+        tracing::error!("Failed to create OAuth client: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("OAuth configuration error")),
+        )
+    })?;
+
+    // Exchange the code for an access token
+    let token_result = client
+        .exchange_code(AuthorizationCode::new(query.code))
+        .request_async(async_http_client)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to exchange code for token: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to authenticate with Facebook")),
+            )
+        })?;
+
+    let http_client = reqwest::Client::new();
+
+    // Get user info from Facebook Graph API
+    let user_info_url = "https://graph.facebook.com/v18.0/me?fields=id,name,email";
+    let user_info_response = http_client
+        .get(user_info_url)
+        .bearer_auth(token_result.access_token().secret())
+        .send()
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch user info: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to fetch user info from Facebook")),
+            )
+        })?;
+
+    let facebook_user: FacebookUserInfo = user_info_response.json().await.map_err(|e| {
+        tracing::error!("Failed to parse user info: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to parse user info from Facebook")),
+        )
+    })?;
+
+    // Email is required
+    let email = facebook_user.email.ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse::new("Email permission required for Facebook login")),
+        )
+    })?;
+
+    // Check if user already exists with this Facebook account
+    let existing_provider: Option<(Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT user_id FROM auth_providers
+        WHERE provider = $1 AND provider_user_id = $2
+        "#,
+    )
+    .bind(AuthProviderType::Facebook)
+    .bind(&facebook_user.id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Internal server error")),
+        )
+    })?;
+
+    let user = if let Some((user_id,)) = existing_provider {
+        // User exists, fetch the user
+        sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Internal server error")),
+                )
+            })?
+    } else {
+        // Check if user exists with this email (from local registration or other OAuth)
+        let existing_user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
+            .bind(&email)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Internal server error")),
+                )
+            })?;
+
+        if let Some(user) = existing_user {
+            // Link Facebook account to existing user
+            sqlx::query(
+                r#"
+                INSERT INTO auth_providers (user_id, provider, provider_user_id, provider_data)
+                VALUES ($1, $2, $3, $4)
+                "#,
+            )
+            .bind(user.id)
+            .bind(AuthProviderType::Facebook)
+            .bind(&facebook_user.id)
+            .bind(serde_json::json!({
+                "id": facebook_user.id,
+                "name": facebook_user.name,
+                "email": email,
+            }))
+            .execute(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to link Facebook account")),
+                )
+            })?;
+
+            user
+        } else {
+            // Create new user
+            let full_name = facebook_user.name
+                .as_ref()
+                .unwrap_or(&email.split('@').next().unwrap_or("User").to_string())
+                .clone();
+
+            let new_user = sqlx::query_as::<_, User>(
+                r#"
+                INSERT INTO users (email, full_name, password_hash, is_organizer)
+                VALUES ($1, $2, NULL, $3)
+                RETURNING *
+                "#,
+            )
+            .bind(&email)
+            .bind(&full_name)
+            .bind(false)
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to create user")),
+                )
+            })?;
+
+            // Create auth provider record
+            sqlx::query(
+                r#"
+                INSERT INTO auth_providers (user_id, provider, provider_user_id, provider_data)
+                VALUES ($1, $2, $3, $4)
+                "#,
+            )
+            .bind(new_user.id)
+            .bind(AuthProviderType::Facebook)
+            .bind(&facebook_user.id)
+            .bind(serde_json::json!({
+                "id": facebook_user.id,
+                "name": facebook_user.name,
                 "email": email,
             }))
             .execute(&state.db)

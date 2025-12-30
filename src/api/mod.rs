@@ -84,6 +84,8 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/auth/github/callback", get(handlers::github_callback))
         .route("/auth/apple", get(handlers::apple_authorize))
         .route("/auth/apple/callback", get(handlers::apple_callback))
+        .route("/auth/facebook", get(handlers::facebook_authorize))
+        .route("/auth/facebook/callback", get(handlers::facebook_callback))
         // Public label routes
         .route("/labels", get(handlers::list_labels))
         // Public track routes (read-only)
