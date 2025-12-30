@@ -1,4 +1,4 @@
-.PHONY: help install build build-frontend build-backend test test-unit test-integration test-coverage test-coverage-ci test-watch test-frontend run clean dev-frontend dev-backend check fmt setup-hooks db-setup ci-local
+.PHONY: help install build build-frontend build-backend test test-unit test-integration test-e2e test-coverage test-coverage-ci test-watch test-frontend run clean dev-frontend dev-backend check fmt setup-hooks db-setup webdriver-setup ci-local
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -38,8 +38,15 @@ test-unit: ## Run unit tests only
 test-integration: ## Run integration tests only (requires PostgreSQL)
 	@echo "Running integration tests..."
 	@echo "Make sure PostgreSQL is running and test database exists!"
-	cargo test --test '*'
+	cargo test --test '*' -- --skip e2e
 	@echo "Integration tests passed!"
+
+test-e2e: ## Run end-to-end tests (requires PostgreSQL, WebDriver, and built frontend)
+	@echo "Running end-to-end tests..."
+	@echo "Make sure PostgreSQL is running, test database exists, and WebDriver is running!"
+	@echo "Start WebDriver with: make webdriver-setup"
+	cargo test --test 'e2e_*' -- --ignored --test-threads=1
+	@echo "E2E tests passed!"
 
 test-watch: ## Run tests in watch mode (auto-rerun on changes)
 	@echo "Running tests in watch mode..."
@@ -105,6 +112,13 @@ db-setup: ## Setup test database
 	@command -v sqlx >/dev/null 2>&1 || { echo "Installing sqlx-cli..."; cargo install sqlx-cli --no-default-features --features postgres; }
 	sqlx migrate run --database-url "postgres://postgres:postgres@localhost/call_for_papers_test"
 	@echo "Test database ready!"
+
+webdriver-setup: ## Start WebDriver for E2E tests (geckodriver)
+	@echo "Starting geckodriver on port 4444..."
+	@command -v geckodriver >/dev/null 2>&1 || { echo "ERROR: geckodriver not found. Install with: brew install geckodriver (macOS) or download from https://github.com/mozilla/geckodriver/releases"; exit 1; }
+	@pkill geckodriver || true
+	geckodriver --port 4444 &
+	@echo "Geckodriver started. Run 'pkill geckodriver' to stop."
 
 ci-local: check test ## Run CI checks locally (format, lint, test)
 	@echo "All CI checks passed locally!"

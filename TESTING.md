@@ -15,11 +15,11 @@ This document describes the testing strategy, setup, and best practices for the 
 
 ## Overview
 
-The project uses a multi-layered testing approach:
+The project uses a comprehensive multi-layered testing approach:
 
 1. **Unit Tests**: Test individual functions and modules in isolation
 2. **Integration Tests**: Test HTTP endpoints and database interactions with full application context
-3. **End-to-End Tests**: _(Future)_ Test complete user workflows through the UI
+3. **End-to-End Tests**: Test complete user workflows through the browser UI with real application and database
 
 ### Test Philosophy
 
@@ -39,13 +39,17 @@ call-for-papers/
 │   ├── handlers/             # HTTP handlers (with inline unit tests)
 │   ├── models/               # Database models (with inline unit tests)
 │   └── lib.rs                # Library exports
-├── tests/                    # Integration tests
-│   ├── common/               # Shared test utilities
+├── tests/                    # Integration and E2E tests
+│   ├── common/               # Shared integration test utilities
 │   │   └── mod.rs            # TestContext and helper functions
+│   ├── e2e/                  # E2E test infrastructure
+│   │   └── mod.rs            # E2eContext and browser automation helpers
 │   ├── auth_tests.rs         # Authentication integration tests
 │   ├── talk_tests.rs         # Talk management integration tests
 │   ├── label_rating_tests.rs # Label and rating integration tests
-│   └── schedule_tests.rs     # Schedule management integration tests
+│   ├── schedule_tests.rs     # Schedule management integration tests
+│   ├── e2e_speaker_tests.rs  # Speaker workflow E2E tests
+│   └── e2e_organizer_tests.rs # Organizer workflow E2E tests
 └── Cargo.toml                # Dependencies including test dependencies
 ```
 
@@ -80,6 +84,36 @@ async fn test_register_success() {
 }
 ```
 
+#### End-to-End Tests
+Located in `tests/e2e_*.rs`, testing complete user workflows through the browser:
+
+```rust
+// In tests/e2e_speaker_tests.rs
+#[tokio::test]
+#[ignore] // Requires WebDriver
+async fn test_speaker_submit_talk() {
+    let ctx = E2eContext::new().await.expect("Failed to create E2E context");
+
+    // Register and login
+    ctx.register("speaker@example.com", "speaker", "password", "Speaker").await.expect("Failed to register");
+
+    // Navigate to submit talk page
+    ctx.goto("/talks/new").await.expect("Failed to navigate");
+
+    // Fill form and submit
+    ctx.fill_input("#title", "My Talk").await.expect("Failed to fill title");
+    ctx.fill_input("#short_summary", "Summary").await.expect("Failed to fill summary");
+    ctx.click("button[type='submit']").await.expect("Failed to submit");
+
+    // Verify talk appears
+    ctx.goto("/talks/mine").await.expect("Failed to navigate");
+    let talks = ctx.find_all(".talk-item").await.expect("Failed to find talks");
+    assert_eq!(talks.len(), 1);
+
+    ctx.cleanup().await;
+}
+```
+
 ## Running Tests
 
 ### Prerequisites
@@ -95,6 +129,27 @@ async fn test_register_success() {
    export DATABASE_URL="postgres://postgres:postgres@localhost/call_for_papers_test"
    export TEST_DATABASE_URL="postgres://postgres:postgres@localhost/call_for_papers_test"
    export JWT_SECRET="test_jwt_secret_for_testing"
+   ```
+
+#### Additional Prerequisites for E2E Tests
+
+4. **WebDriver**: Install geckodriver (Firefox) or chromedriver (Chrome):
+   ```bash
+   # macOS
+   brew install geckodriver
+
+   # Linux
+   wget https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz
+   tar -xzf geckodriver-v0.34.0-linux64.tar.gz
+   sudo mv geckodriver /usr/local/bin/
+
+   # Or use the Makefile
+   make webdriver-setup
+   ```
+
+5. **Built Frontend**: E2E tests require a built frontend:
+   ```bash
+   cd frontend && trunk build --release
    ```
 
 ### Running All Tests
@@ -116,8 +171,15 @@ cargo test --verbose
 # Run only unit tests
 cargo test --lib
 
-# Run only integration tests
-cargo test --test '*'
+# Run only integration tests (excludes E2E)
+cargo test --test '*' -- --skip e2e
+# Or use Makefile
+make test-integration
+
+# Run only E2E tests (requires WebDriver)
+cargo test --test 'e2e_*' -- --ignored --test-threads=1
+# Or use Makefile
+make test-e2e
 
 # Run specific integration test file
 cargo test --test auth_tests
@@ -125,6 +187,33 @@ cargo test --test auth_tests
 # Run specific test by name
 cargo test test_register_success
 ```
+
+### Running E2E Tests
+
+E2E tests require additional setup and run with the `--ignored` flag:
+
+```bash
+# 1. Start WebDriver (in separate terminal)
+make webdriver-setup
+# Or manually: geckodriver --port 4444
+
+# 2. Setup test database
+make db-setup
+
+# 3. Build frontend
+cd frontend && trunk build --release && cd ..
+
+# 4. Run E2E tests
+make test-e2e
+
+# Or run manually with cargo
+cargo test --test 'e2e_*' -- --ignored --test-threads=1
+```
+
+**Note**: E2E tests run sequentially (`--test-threads=1`) because they:
+- Start and stop the application server
+- Use shared browser instances
+- Manage database state
 
 ### Running Tests in Parallel
 
@@ -410,6 +499,22 @@ The integration test suite covers:
 - ✅ Assign/unassign talks to slots
 - ✅ Get conference schedule
 - ✅ Permission checks for all operations
+
+#### End-to-End Tests - Speaker Workflows (`tests/e2e_speaker_tests.rs`) - 6 tests
+- ✅ Registration and login flow
+- ✅ Submit new talk through UI
+- ✅ Edit existing talk
+- ✅ Delete talk
+- ✅ View talk status
+- ✅ Respond to talk acceptance
+
+#### End-to-End Tests - Organizer Workflows (`tests/e2e_organizer_tests.rs`) - 6 tests
+- ✅ Organizer login and dashboard access
+- ✅ View all submitted talks
+- ✅ Rate talks
+- ✅ Add labels to talks
+- ✅ Change talk state (accept/reject)
+- ✅ Create conference schedule
 
 ### Coverage Statistics
 
