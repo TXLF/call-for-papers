@@ -93,6 +93,8 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         // AI tagging routes (organizer only)
         .route("/ai/auto-tag", get(handlers::auto_tag_with_claude))
         .route("/ai/create-labels", post(handlers::create_ai_labels))
+        // Configuration route (organizer only)
+        .route("/configuration", get(handlers::get_configuration))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth_middleware,

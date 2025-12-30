@@ -12,6 +12,7 @@ use crate::pages::{
     schedule_builder::ScheduleBuilder, public_schedule::PublicSchedule,
     manage_email_templates::ManageEmailTemplates, bulk_email::BulkEmail,
     export_talks::ExportTalks, ai_auto_tag::AIAutoTag,
+    configuration::Configuration,
 };
 use crate::services::auth::AuthService;
 
@@ -57,6 +58,8 @@ pub enum Route {
     ExportTalks,
     #[at("/organizer/ai-auto-tag")]
     AIAutoTag,
+    #[at("/organizer/configuration")]
+    Configuration,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -144,6 +147,11 @@ fn switch(routes: Route) -> Html {
                 <AIAutoTag />
             </OrganizerRoute>
         },
+        Route::Configuration => html! {
+            <OrganizerRoute>
+                <Configuration />
+            </OrganizerRoute>
+        },
         Route::NotFound => html! { <NotFound /> },
     }
 }
@@ -202,6 +210,7 @@ fn app_content() -> Html {
                                 <Link<Route> to={Route::BulkEmail}>{ "Bulk Email" }</Link<Route>>
                                 <Link<Route> to={Route::ExportTalks}>{ "Export Talks" }</Link<Route>>
                                 <Link<Route> to={Route::AIAutoTag}>{ "AI Auto-Tag" }</Link<Route>>
+                                <Link<Route> to={Route::Configuration}>{ "Configuration" }</Link<Route>>
                             }
                             <button onclick={on_logout} class="logout-button">{ "Logout" }</button>
                         </>

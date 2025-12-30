@@ -10,6 +10,7 @@ pub mod email_templates;
 pub mod bulk_email;
 pub mod export;
 pub mod ai_tagging;
+pub mod config;
 
 pub use auth::{login, register, google_authorize, google_callback, github_authorize, github_callback, apple_authorize, apple_callback, facebook_authorize, facebook_callback, linkedin_authorize, linkedin_callback};
 pub use talks::{create_talk, delete_talk, get_my_talks, get_talk, update_talk, upload_slides, respond_to_talk, list_all_talks, change_talk_state};
@@ -23,3 +24,4 @@ pub use email_templates::{list_email_templates, get_email_template, create_email
 pub use bulk_email::send_bulk_email;
 pub use export::export_talks;
 pub use ai_tagging::{auto_tag_with_claude, create_ai_labels};
+pub use config::get_configuration;
