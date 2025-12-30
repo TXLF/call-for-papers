@@ -9,8 +9,8 @@ pub fn manage_tracks() -> Html {
     let tracks = use_state(|| Vec::<Track>::new());
     let loading = use_state(|| true);
     let error = use_state(|| None::<String>);
-    let show_create_form = use_state(|| false);
-    let _editing_track_id = use_state(|| None::<String>);
+    let show_form = use_state(|| false);
+    let editing_track = use_state(|| None::<Track>);
     let conference_id = use_state(|| None::<String>);
 
     // Form state
@@ -57,58 +57,90 @@ pub fn manage_tracks() -> Html {
         });
     }
 
-    // Create track handler
-    let on_create = {
+    // Submit handler (create or update)
+    let on_submit = {
         let tracks = tracks.clone();
         let conference_id = conference_id.clone();
+        let editing_track = editing_track.clone();
         let name = name.clone();
         let description = description.clone();
         let capacity = capacity.clone();
-        let show_create_form = show_create_form.clone();
+        let show_form = show_form.clone();
         let error = error.clone();
 
         Callback::from(move |e: SubmitEvent| {
             e.prevent_default();
             let tracks = tracks.clone();
             let conf_id = (*conference_id).clone();
+            let editing = (*editing_track).clone();
             let name_val = (*name).clone();
             let desc_val = if (*description).trim().is_empty() { None } else { Some((*description).clone()) };
             let cap_val = (*capacity).parse::<i32>().ok();
-            let show_create_form = show_create_form.clone();
+            let show_form = show_form.clone();
+            let editing_track = editing_track.clone();
             let error = error.clone();
             let name = name.clone();
             let description = description.clone();
             let capacity = capacity.clone();
 
             wasm_bindgen_futures::spawn_local(async move {
-                let conf_id = match conf_id {
-                    Some(id) => id,
-                    None => {
-                        error.set(Some("No active conference found".to_string()));
-                        return;
-                    }
-                };
+                if let Some(track) = editing {
+                    // Update existing track
+                    let request = UpdateTrackRequest {
+                        name: Some(name_val),
+                        description: desc_val,
+                        capacity: cap_val,
+                    };
 
-                let request = CreateTrackRequest {
-                    conference_id: conf_id,
-                    name: name_val,
-                    description: desc_val,
-                    capacity: cap_val,
-                };
-
-                match TrackService::create_track(request).await {
-                    Ok(new_track) => {
-                        let mut current_tracks = (*tracks).clone();
-                        current_tracks.push(new_track);
-                        tracks.set(current_tracks);
-                        name.set(String::new());
-                        description.set(String::new());
-                        capacity.set(String::new());
-                        show_create_form.set(false);
-                        error.set(None);
+                    match TrackService::update_track(&track.id, request).await {
+                        Ok(updated_track) => {
+                            let mut current_tracks = (*tracks).clone();
+                            if let Some(index) = current_tracks.iter().position(|t| t.id == track.id) {
+                                current_tracks[index] = updated_track;
+                            }
+                            tracks.set(current_tracks);
+                            name.set(String::new());
+                            description.set(String::new());
+                            capacity.set(String::new());
+                            show_form.set(false);
+                            editing_track.set(None);
+                            error.set(None);
+                        }
+                        Err(e) => {
+                            error.set(Some(format!("Failed to update track: {}", e)));
+                        }
                     }
-                    Err(e) => {
-                        error.set(Some(format!("Failed to create track: {}", e)));
+                } else {
+                    // Create new track
+                    let conf_id = match conf_id {
+                        Some(id) => id,
+                        None => {
+                            error.set(Some("No active conference found".to_string()));
+                            return;
+                        }
+                    };
+
+                    let request = CreateTrackRequest {
+                        conference_id: conf_id,
+                        name: name_val,
+                        description: desc_val,
+                        capacity: cap_val,
+                    };
+
+                    match TrackService::create_track(request).await {
+                        Ok(new_track) => {
+                            let mut current_tracks = (*tracks).clone();
+                            current_tracks.push(new_track);
+                            tracks.set(current_tracks);
+                            name.set(String::new());
+                            description.set(String::new());
+                            capacity.set(String::new());
+                            show_form.set(false);
+                            error.set(None);
+                        }
+                        Err(e) => {
+                            error.set(Some(format!("Failed to create track: {}", e)));
+                        }
                     }
                 }
             });
@@ -141,10 +173,50 @@ pub fn manage_tracks() -> Html {
         })
     };
 
-    let show_create_form_display = *show_create_form;
+    // Edit button handler
+    let create_edit_handler = |track: Track| {
+        let show_form = show_form.clone();
+        let editing_track = editing_track.clone();
+        let name = name.clone();
+        let description = description.clone();
+        let capacity = capacity.clone();
+
+        Callback::from(move |_: MouseEvent| {
+            name.set(track.name.clone());
+            description.set(track.description.clone().unwrap_or_default());
+            capacity.set(track.capacity.map(|c| c.to_string()).unwrap_or_default());
+            editing_track.set(Some(track.clone()));
+            show_form.set(true);
+        })
+    };
+
+    let show_form_display = *show_form;
+    let is_editing = editing_track.is_some();
+
     let toggle_form = {
-        let show_create_form = show_create_form.clone();
-        Callback::from(move |_| show_create_form.set(!*show_create_form))
+        let show_form = show_form.clone();
+        let editing_track = editing_track.clone();
+        let name = name.clone();
+        let description = description.clone();
+        let capacity = capacity.clone();
+
+        Callback::from(move |_| {
+            if *show_form {
+                // Cancel - clear form
+                name.set(String::new());
+                description.set(String::new());
+                capacity.set(String::new());
+                editing_track.set(None);
+                show_form.set(false);
+            } else {
+                // Open create form
+                name.set(String::new());
+                description.set(String::new());
+                capacity.set(String::new());
+                editing_track.set(None);
+                show_form.set(true);
+            }
+        })
     };
 
     html! {
@@ -155,7 +227,7 @@ pub fn manage_tracks() -> Html {
                     onclick={toggle_form}
                     class="btn-primary"
                 >
-                    { if show_create_form_display { "Cancel" } else { "Add Track" } }
+                    { if show_form_display { "Cancel" } else { "Add Track" } }
                 </button>
             </div>
 
@@ -163,10 +235,10 @@ pub fn manage_tracks() -> Html {
                 <div class="error-message">{ err }</div>
             }
 
-            if *show_create_form {
+            if *show_form {
                 <div class="create-form-card">
-                    <h2>{ "Create New Track" }</h2>
-                    <form onsubmit={on_create}>
+                    <h2>{ if is_editing { "Edit Track" } else { "Create New Track" } }</h2>
+                    <form onsubmit={on_submit}>
                         <div class="form-group">
                             <label>{ "Track Name *" }</label>
                             <input
@@ -213,7 +285,9 @@ pub fn manage_tracks() -> Html {
                             />
                         </div>
 
-                        <button type="submit" class="btn-primary">{ "Create Track" }</button>
+                        <button type="submit" class="btn-primary">
+                            { if is_editing { "Update Track" } else { "Create Track" } }
+                        </button>
                     </form>
                 </div>
             }
@@ -229,16 +303,25 @@ pub fn manage_tracks() -> Html {
                     {
                         tracks.iter().map(|track| {
                             let track_id = track.id.clone();
+                            let track_for_edit = track.clone();
                             html! {
                                 <div class="track-card" key={track.id.clone()}>
                                     <div class="track-header">
                                         <h3>{ &track.name }</h3>
-                                        <button
-                                            onclick={create_delete_handler(track_id)}
-                                            class="btn-danger btn-small"
-                                        >
-                                            { "Delete" }
-                                        </button>
+                                        <div class="track-actions">
+                                            <button
+                                                onclick={create_edit_handler(track_for_edit)}
+                                                class="btn-secondary btn-small"
+                                            >
+                                                { "Edit" }
+                                            </button>
+                                            <button
+                                                onclick={create_delete_handler(track_id)}
+                                                class="btn-danger btn-small"
+                                            >
+                                                { "Delete" }
+                                            </button>
+                                        </div>
                                     </div>
                                     if let Some(desc) = &track.description {
                                         <p class="track-description">{ desc }</p>
