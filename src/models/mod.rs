@@ -13,5 +13,5 @@ pub use talk::{Talk, TalkState, CreateTalkRequest, UpdateTalkRequest, TalkRespon
 pub use label::{Label, LabelResponse, CreateLabelRequest, UpdateLabelRequest, AddLabelToTalkRequest, TalkLabel};
 pub use rating::{Rating, CreateRatingRequest, UpdateRatingRequest, RatingResponse, TalkRatingStats, RatingsStatisticsResponse, RatingDistribution};
 pub use track::{Track, TrackResponse, CreateTrackRequest, UpdateTrackRequest};
-pub use schedule_slot::{ScheduleSlot, ScheduleSlotResponse, CreateScheduleSlotRequest, UpdateScheduleSlotRequest, AssignTalkRequest};
+pub use schedule_slot::{ScheduleSlot, ScheduleSlotResponse, CreateScheduleSlotRequest, UpdateScheduleSlotRequest, AssignTalkRequest, PublicScheduleSlot, PublicScheduleTalk};
 pub use conference::{Conference, ConferenceResponse, CreateConferenceRequest, UpdateConferenceRequest};

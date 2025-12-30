@@ -1,9 +1,30 @@
 use gloo_net::http::Request;
-use crate::{services::auth::AuthService, types::{ScheduleSlot, ErrorResponse, CreateScheduleSlotRequest, UpdateScheduleSlotRequest, AssignTalkRequest}};
+use crate::{services::auth::AuthService, types::{ScheduleSlot, ErrorResponse, CreateScheduleSlotRequest, UpdateScheduleSlotRequest, AssignTalkRequest, PublicScheduleSlot}};
 
 pub struct ScheduleSlotService;
 
 impl ScheduleSlotService {
+    /// Get public schedule with talk details (public endpoint, no auth required)
+    pub async fn get_public_schedule() -> Result<Vec<PublicScheduleSlot>, String> {
+        let response = Request::get("/api/schedule")
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if response.ok() {
+            response
+                .json::<Vec<PublicScheduleSlot>>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))
+        } else {
+            let error = response
+                .json::<ErrorResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse error: {}", e))?;
+            Err(error.error)
+        }
+    }
+
     /// List all schedule slots (public endpoint, no auth required)
     pub async fn list_schedule_slots() -> Result<Vec<ScheduleSlot>, String> {
         let response = Request::get("/api/schedule-slots")

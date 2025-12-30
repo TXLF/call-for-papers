@@ -4,13 +4,14 @@ use axum::{
     Json,
 };
 use chrono::Utc;
+use sqlx::Row;
 use uuid::Uuid;
 
 use crate::{
     api::AppState,
     models::{
         auth::ErrorResponse, AssignTalkRequest, CreateScheduleSlotRequest, ScheduleSlot,
-        ScheduleSlotResponse, UpdateScheduleSlotRequest,
+        ScheduleSlotResponse, UpdateScheduleSlotRequest, PublicScheduleSlot, PublicScheduleTalk,
     },
 };
 
@@ -351,4 +352,123 @@ pub async fn unassign_talk_from_slot(
 
     tracing::info!("Talk unassigned from schedule slot {}", slot_id);
     Ok(Json(ScheduleSlotResponse::from(updated_slot)))
+}
+
+/// Get public schedule with talk details (public endpoint)
+pub async fn get_public_schedule(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<PublicScheduleSlot>>, (StatusCode, Json<ErrorResponse>)> {
+    // Query that joins schedule_slots, tracks, and talks
+    // Using sqlx::query instead of query! macro to avoid compile-time type inference issues
+    let rows = sqlx::query(
+        r#"
+        SELECT
+            ss.id,
+            ss.track_id,
+            t.name as track_name,
+            ss.slot_date,
+            ss.start_time,
+            ss.end_time,
+            ss.talk_id,
+            tk.title as talk_title,
+            tk.short_summary as talk_summary,
+            u.full_name as speaker_name
+        FROM schedule_slots ss
+        INNER JOIN tracks t ON ss.track_id = t.id
+        LEFT JOIN talks tk ON ss.talk_id = tk.id
+        LEFT JOIN users u ON tk.speaker_id = u.id
+        ORDER BY ss.slot_date ASC, ss.start_time ASC, t.name ASC
+        "#
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error fetching public schedule: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to fetch schedule")),
+        )
+    })?;
+
+    let mut schedule = Vec::new();
+    for row in rows {
+        let slot_id: Uuid = row.try_get("id").map_err(|e| {
+            tracing::error!("Error getting slot id: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to parse schedule data")),
+            )
+        })?;
+
+        let track_id: Uuid = row.try_get("track_id").map_err(|e| {
+            tracing::error!("Error getting track_id: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to parse schedule data")),
+            )
+        })?;
+
+        let track_name: String = row.try_get("track_name").map_err(|e| {
+            tracing::error!("Error getting track_name: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to parse schedule data")),
+            )
+        })?;
+
+        let slot_date = row.try_get("slot_date").map_err(|e| {
+            tracing::error!("Error getting slot_date: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to parse schedule data")),
+            )
+        })?;
+
+        let start_time = row.try_get("start_time").map_err(|e| {
+            tracing::error!("Error getting start_time: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to parse schedule data")),
+            )
+        })?;
+
+        let end_time = row.try_get("end_time").map_err(|e| {
+            tracing::error!("Error getting end_time: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to parse schedule data")),
+            )
+        })?;
+
+        // Optional talk fields (LEFT JOIN)
+        let talk_id: Option<Uuid> = row.try_get("talk_id").ok();
+        let talk_title: Option<String> = row.try_get("talk_title").ok();
+        let talk_summary: Option<String> = row.try_get("talk_summary").ok();
+        let speaker_name: Option<String> = row.try_get("speaker_name").ok();
+
+        let talk = if let (Some(id), Some(title), Some(summary), Some(speaker)) =
+            (talk_id, talk_title, talk_summary, speaker_name)
+        {
+            Some(PublicScheduleTalk {
+                id,
+                title,
+                short_summary: summary,
+                speaker_name: speaker,
+            })
+        } else {
+            None
+        };
+
+        schedule.push(PublicScheduleSlot {
+            id: slot_id,
+            track_id,
+            track_name,
+            slot_date,
+            start_time,
+            end_time,
+            talk,
+        });
+    }
+
+    Ok(Json(schedule))
 }

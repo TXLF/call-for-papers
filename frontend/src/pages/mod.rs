@@ -14,3 +14,4 @@ pub mod manage_tracks;
 pub mod manage_schedule_slots;
 pub mod assign_talks;
 pub mod schedule_builder;
+pub mod public_schedule;

@@ -277,3 +277,22 @@ pub struct UpdateScheduleSlotRequest {
 pub struct AssignTalkRequest {
     pub talk_id: String,
 }
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct PublicScheduleSlot {
+    pub id: String,
+    pub track_id: String,
+    pub track_name: String,
+    pub slot_date: String,
+    pub start_time: String,
+    pub end_time: String,
+    pub talk: Option<PublicScheduleTalk>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct PublicScheduleTalk {
+    pub id: String,
+    pub title: String,
+    pub short_summary: String,
+    pub speaker_name: String,
+}

@@ -104,6 +104,8 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         // Public schedule slot routes (read-only)
         .route("/schedule-slots", get(handlers::list_schedule_slots))
         .route("/schedule-slots/:id", get(handlers::get_schedule_slot))
+        // Public schedule view (with talk details)
+        .route("/schedule", get(handlers::get_public_schedule))
         .merge(protected_routes)
         .merge(organizer_routes)
         .with_state(state);

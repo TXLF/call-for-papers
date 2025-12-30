@@ -67,3 +67,22 @@ impl From<ScheduleSlot> for ScheduleSlotResponse {
         }
     }
 }
+
+#[derive(Debug, Serialize)]
+pub struct PublicScheduleSlot {
+    pub id: Uuid,
+    pub track_id: Uuid,
+    pub track_name: String,
+    pub slot_date: NaiveDate,
+    pub start_time: NaiveTime,
+    pub end_time: NaiveTime,
+    pub talk: Option<PublicScheduleTalk>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PublicScheduleTalk {
+    pub id: Uuid,
+    pub title: String,
+    pub short_summary: String,
+    pub speaker_name: String,
+}

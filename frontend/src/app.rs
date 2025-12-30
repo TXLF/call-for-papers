@@ -9,7 +9,7 @@ use crate::pages::{
     organizer_dashboard::OrganizerDashboard, organizer_labels::OrganizerLabels,
     ratings_dashboard::RatingsDashboard, manage_tracks::ManageTracks,
     manage_schedule_slots::ManageScheduleSlots, assign_talks::AssignTalks,
-    schedule_builder::ScheduleBuilder,
+    schedule_builder::ScheduleBuilder, public_schedule::PublicSchedule,
 };
 use crate::services::auth::AuthService;
 
@@ -23,6 +23,8 @@ pub enum Route {
     Signup,
     #[at("/auth/callback")]
     AuthCallback,
+    #[at("/schedule")]
+    PublicSchedule,
     #[at("/talks/submit")]
     SubmitTalk,
     #[at("/talks/mine")]
@@ -56,6 +58,7 @@ fn switch(routes: Route) -> Html {
         Route::Login => html! { <Login /> },
         Route::Signup => html! { <Signup /> },
         Route::AuthCallback => html! { <AuthCallback /> },
+        Route::PublicSchedule => html! { <PublicSchedule /> },
         Route::SubmitTalk => html! {
             <ProtectedRoute>
                 <SubmitTalk />
@@ -150,6 +153,7 @@ fn app_content() -> Html {
                 <h1>{ "Call for Papers" }</h1>
                 <nav>
                     <Link<Route> to={Route::Home}>{ "Home" }</Link<Route>>
+                    <Link<Route> to={Route::PublicSchedule}>{ "Schedule" }</Link<Route>>
                     if *is_authenticated {
                         <>
                             <Link<Route> to={Route::SpeakerDashboard}>{ "Dashboard" }</Link<Route>>
