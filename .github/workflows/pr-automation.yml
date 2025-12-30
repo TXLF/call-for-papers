@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.action == 'synchronize'
     steps:
-      - uses: actions/stale@v9
+      - uses: actions/stale@v10
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-pr-message: 'This PR has been automatically marked as stale because it has not had recent activity. It will be closed if no further activity occurs.'
