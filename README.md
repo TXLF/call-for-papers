@@ -179,9 +179,11 @@ For detailed development setup including database configuration, environment var
 
 ### Technical Documentation
 
+- **[Architecture Guide](docs/architecture.md)** - System architecture, design decisions, diagrams, and implementation patterns
 - **[Development Guide](DEVELOPMENT.md)** - Setup instructions, development workflow, and troubleshooting
 - **[Database Setup](DATABASE_SETUP.md)** - Database configuration and migration instructions
 - **[Configuration Reference](config.example.toml)** - All available configuration options
+- **[Deployment Guide](scripts/README.md)** - Production deployment and operations
 
 ### Configuration
 
