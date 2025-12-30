@@ -16,15 +16,18 @@ pub struct AppState {
     pub db: PgPool,
     pub config: Config,
     pub email_service: EmailService,
+    pub claude_service: crate::services::ClaudeService,
 }
 
 pub fn create_router(db: PgPool, config: Config) -> Router {
     let upload_dir = config.upload_dir.clone();
     let email_service = EmailService::new(config.clone(), db.clone());
+    let claude_service = crate::services::ClaudeService::new(&config);
     let state = AppState {
         db,
         config,
         email_service,
+        claude_service,
     };
 
     // Protected routes (require authentication)
@@ -84,6 +87,9 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/bulk-email", post(handlers::send_bulk_email))
         // Export route (organizer only)
         .route("/export/talks", get(handlers::export_talks))
+        // AI tagging routes (organizer only)
+        .route("/ai/auto-tag", get(handlers::auto_tag_with_claude))
+        .route("/ai/create-labels", post(handlers::create_ai_labels))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth_middleware,

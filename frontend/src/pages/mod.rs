@@ -18,3 +18,4 @@ pub mod public_schedule;
 pub mod manage_email_templates;
 pub mod bulk_email;
 pub mod export_talks;
+pub mod ai_auto_tag;

@@ -30,6 +30,7 @@ pub struct Config {
     pub smtp_user: Option<String>,
     pub smtp_password: Option<String>,
     pub smtp_from: Option<String>,
+    pub claude_api_key: Option<String>,
 }
 
 impl Config {
@@ -88,6 +89,8 @@ impl Config {
         let smtp_password = std::env::var("SMTP_PASSWORD").ok();
         let smtp_from = std::env::var("SMTP_FROM").ok();
 
+        let claude_api_key = std::env::var("CLAUDE_API_KEY").ok();
+
         Ok(Config {
             database_url,
             server_host,
@@ -117,6 +120,7 @@ impl Config {
             smtp_user,
             smtp_password,
             smtp_from,
+            claude_api_key,
         })
     }
 }
