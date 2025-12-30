@@ -77,6 +77,9 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         // Authentication routes
         .route("/auth/register", post(handlers::register))
         .route("/auth/login", post(handlers::login))
+        // OAuth routes
+        .route("/auth/google", get(handlers::google_authorize))
+        .route("/auth/google/callback", get(handlers::google_callback))
         // Public label routes
         .route("/labels", get(handlers::list_labels))
         // Public track routes (read-only)

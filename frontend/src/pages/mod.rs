@@ -1,8 +1,9 @@
 pub mod home;
 pub mod login;
+pub mod signup;
+pub mod auth_callback;
 pub mod my_talks;
 pub mod not_found;
-pub mod signup;
 pub mod submit_talk;
 pub mod speaker_dashboard;
 pub mod organizer_talks;

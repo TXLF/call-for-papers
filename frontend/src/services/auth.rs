@@ -79,6 +79,10 @@ impl AuthService {
         LocalStorage::get(TOKEN_KEY).ok()
     }
 
+    pub fn set_token(token: &str) {
+        let _ = LocalStorage::set(TOKEN_KEY, token);
+    }
+
     pub fn is_authenticated() -> bool {
         Self::get_token().is_some()
     }

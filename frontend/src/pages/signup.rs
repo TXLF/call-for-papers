@@ -225,6 +225,14 @@ pub fn signup() -> Html {
                     </button>
                 </form>
 
+                <div class="oauth-divider">
+                    <span>{ "or" }</span>
+                </div>
+
+                <a href="/api/auth/google" class="oauth-button google-button">
+                    <span>{ "Continue with Google" }</span>
+                </a>
+
                 <p class="auth-link">
                     { "Already have an account? " }
                     <Link<Route> to={Route::Login}>{ "Login" }</Link<Route>>

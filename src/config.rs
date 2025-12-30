@@ -8,6 +8,9 @@ pub struct Config {
     pub jwt_secret: String,
     pub jwt_expiry_hours: i64,
     pub upload_dir: String,
+    pub google_client_id: Option<String>,
+    pub google_client_secret: Option<String>,
+    pub google_redirect_url: Option<String>,
 }
 
 impl Config {
@@ -36,6 +39,10 @@ impl Config {
         let upload_dir = std::env::var("UPLOAD_DIR")
             .unwrap_or_else(|_| "./uploads".to_string());
 
+        let google_client_id = std::env::var("GOOGLE_CLIENT_ID").ok();
+        let google_client_secret = std::env::var("GOOGLE_CLIENT_SECRET").ok();
+        let google_redirect_url = std::env::var("GOOGLE_REDIRECT_URL").ok();
+
         Ok(Config {
             database_url,
             server_host,
@@ -43,6 +50,9 @@ impl Config {
             jwt_secret,
             jwt_expiry_hours,
             upload_dir,
+            google_client_id,
+            google_client_secret,
+            google_redirect_url,
         })
     }
 }

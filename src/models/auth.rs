@@ -1,4 +1,39 @@
 use serde::{Deserialize, Serialize};
+use sqlx::Type;
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type, PartialEq)]
+#[sqlx(type_name = "auth_provider_type", rename_all = "lowercase")]
+pub enum AuthProviderType {
+    Local,
+    Google,
+    Facebook,
+    Github,
+    Apple,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AuthProvider {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub provider: AuthProviderType,
+    pub provider_user_id: String,
+    pub provider_data: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GoogleUserInfo {
+    pub sub: String,  // Google user ID
+    pub email: String,
+    pub name: String,
+    pub picture: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OAuthCallbackQuery {
+    pub code: String,
+    pub state: Option<String>,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct RegisterRequest {

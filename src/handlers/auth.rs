@@ -3,18 +3,29 @@ use argon2::{
     Argon2,
 };
 use axum::{
-    extract::State,
+    extract::{Query, State},
     http::StatusCode,
+    response::{IntoResponse, Redirect},
     Json,
 };
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use oauth2::{
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope,
+    TokenResponse, TokenUrl,
+};
+use oauth2::basic::BasicClient;
+use oauth2::reqwest::async_http_client;
 use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
     api::AppState,
-    models::{auth::ErrorResponse, user::UserResponse, AuthResponse, Claims, LoginRequest, RegisterRequest, User},
+    models::{
+        auth::{AuthProviderType, ErrorResponse, GoogleUserInfo, OAuthCallbackQuery},
+        user::UserResponse,
+        AuthResponse, Claims, LoginRequest, RegisterRequest, User
+    },
 };
 
 pub async fn register(
@@ -265,4 +276,304 @@ pub async fn verify_token(token: &str, pool: &PgPool, jwt_secret: &str) -> Resul
         .await?;
 
     Ok(user)
+}
+
+// Google OAuth handlers
+
+fn get_google_oauth_client(
+    client_id: &str,
+    client_secret: &str,
+    redirect_url: &str,
+) -> Result<BasicClient, anyhow::Error> {
+    let google_client_id = ClientId::new(client_id.to_string());
+    let google_client_secret = ClientSecret::new(client_secret.to_string());
+    let auth_url = AuthUrl::new("https://accounts.google.com/o/oauth2/v2/auth".to_string())?;
+    let token_url = TokenUrl::new("https://oauth2.googleapis.com/token".to_string())?;
+
+    Ok(BasicClient::new(
+        google_client_id,
+        Some(google_client_secret),
+        auth_url,
+        Some(token_url),
+    )
+    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
+}
+
+pub async fn google_authorize(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    // Check if Google OAuth is configured
+    let client_id = state
+        .config
+        .google_client_id
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Google OAuth is not configured")),
+            )
+        })?;
+
+    let client_secret = state
+        .config
+        .google_client_secret
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Google OAuth is not configured")),
+            )
+        })?;
+
+    let redirect_url = state
+        .config
+        .google_redirect_url
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Google OAuth is not configured")),
+            )
+        })?;
+
+    let client = get_google_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
+        tracing::error!("Failed to create OAuth client: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("OAuth configuration error")),
+        )
+    })?;
+
+    // Generate the authorization URL
+    let (authorize_url, _csrf_token) = client
+        .authorize_url(CsrfToken::new_random)
+        .add_scope(Scope::new("openid".to_string()))
+        .add_scope(Scope::new("email".to_string()))
+        .add_scope(Scope::new("profile".to_string()))
+        .url();
+
+    Ok(Redirect::to(authorize_url.as_str()))
+}
+
+pub async fn google_callback(
+    State(state): State<AppState>,
+    Query(query): Query<OAuthCallbackQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    // Check if Google OAuth is configured
+    let client_id = state
+        .config
+        .google_client_id
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Google OAuth is not configured")),
+            )
+        })?;
+
+    let client_secret = state
+        .config
+        .google_client_secret
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Google OAuth is not configured")),
+            )
+        })?;
+
+    let redirect_url = state
+        .config
+        .google_redirect_url
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Google OAuth is not configured")),
+            )
+        })?;
+
+    let client = get_google_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
+        tracing::error!("Failed to create OAuth client: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("OAuth configuration error")),
+        )
+    })?;
+
+    // Exchange the code for an access token
+    let token_result = client
+        .exchange_code(AuthorizationCode::new(query.code))
+        .request_async(async_http_client)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to exchange code for token: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to authenticate with Google")),
+            )
+        })?;
+
+    // Get user info from Google
+    let user_info_url = "https://www.googleapis.com/oauth2/v3/userinfo";
+    let client = reqwest::Client::new();
+    let user_info_response = client
+        .get(user_info_url)
+        .bearer_auth(token_result.access_token().secret())
+        .send()
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch user info: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to fetch user info from Google")),
+            )
+        })?;
+
+    let google_user: GoogleUserInfo = user_info_response.json().await.map_err(|e| {
+        tracing::error!("Failed to parse user info: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to parse user info from Google")),
+        )
+    })?;
+
+    // Check if user already exists with this Google account
+    let existing_provider: Option<(Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT user_id FROM auth_providers
+        WHERE provider = $1 AND provider_user_id = $2
+        "#,
+    )
+    .bind(AuthProviderType::Google)
+    .bind(&google_user.sub)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Internal server error")),
+        )
+    })?;
+
+    let user = if let Some((user_id,)) = existing_provider {
+        // User exists, fetch the user
+        sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Internal server error")),
+                )
+            })?
+    } else {
+        // Check if user exists with this email (from local registration)
+        let existing_user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
+            .bind(&google_user.email)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Internal server error")),
+                )
+            })?;
+
+        if let Some(user) = existing_user {
+            // Link Google account to existing user
+            sqlx::query(
+                r#"
+                INSERT INTO auth_providers (user_id, provider, provider_user_id, provider_data)
+                VALUES ($1, $2, $3, $4)
+                "#,
+            )
+            .bind(user.id)
+            .bind(AuthProviderType::Google)
+            .bind(&google_user.sub)
+            .bind(serde_json::json!({
+                "email": google_user.email,
+                "name": google_user.name,
+                "picture": google_user.picture,
+            }))
+            .execute(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to link Google account")),
+                )
+            })?;
+
+            user
+        } else {
+            // Create new user
+            let new_user = sqlx::query_as::<_, User>(
+                r#"
+                INSERT INTO users (email, full_name, password_hash, is_organizer)
+                VALUES ($1, $2, NULL, $3)
+                RETURNING *
+                "#,
+            )
+            .bind(&google_user.email)
+            .bind(&google_user.name)
+            .bind(false)
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to create user")),
+                )
+            })?;
+
+            // Create auth provider record
+            sqlx::query(
+                r#"
+                INSERT INTO auth_providers (user_id, provider, provider_user_id, provider_data)
+                VALUES ($1, $2, $3, $4)
+                "#,
+            )
+            .bind(new_user.id)
+            .bind(AuthProviderType::Google)
+            .bind(&google_user.sub)
+            .bind(serde_json::json!({
+                "email": google_user.email,
+                "name": google_user.name,
+                "picture": google_user.picture,
+            }))
+            .execute(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to create auth provider")),
+                )
+            })?;
+
+            new_user
+        }
+    };
+
+    // Create session token
+    let token = create_session_token(&state.db, &user, &state.config)
+        .await
+        .map_err(|e| {
+            tracing::error!("Token creation error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to create session")),
+            )
+        })?;
+
+    // Redirect to frontend with token
+    let redirect_url = format!("/auth/callback?token={}", token);
+    Ok(Redirect::to(&redirect_url))
 }

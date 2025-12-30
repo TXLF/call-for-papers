@@ -3,8 +3,9 @@ use yew_router::prelude::*;
 
 use crate::components::{protected_route::ProtectedRoute, organizer_route::OrganizerRoute};
 use crate::pages::{
-    home::Home, login::Login, my_talks::MyTalks, not_found::NotFound, signup::Signup,
-    submit_talk::SubmitTalk, speaker_dashboard::SpeakerDashboard, organizer_talks::OrganizerTalks,
+    home::Home, login::Login, signup::Signup, auth_callback::AuthCallback,
+    my_talks::MyTalks, not_found::NotFound, submit_talk::SubmitTalk,
+    speaker_dashboard::SpeakerDashboard, organizer_talks::OrganizerTalks,
     organizer_dashboard::OrganizerDashboard, organizer_labels::OrganizerLabels,
     ratings_dashboard::RatingsDashboard, manage_tracks::ManageTracks,
     manage_schedule_slots::ManageScheduleSlots, assign_talks::AssignTalks,
@@ -20,6 +21,8 @@ pub enum Route {
     Login,
     #[at("/signup")]
     Signup,
+    #[at("/auth/callback")]
+    AuthCallback,
     #[at("/talks/submit")]
     SubmitTalk,
     #[at("/talks/mine")]
@@ -52,6 +55,7 @@ fn switch(routes: Route) -> Html {
         Route::Home => html! { <Home /> },
         Route::Login => html! { <Login /> },
         Route::Signup => html! { <Signup /> },
+        Route::AuthCallback => html! { <AuthCallback /> },
         Route::SubmitTalk => html! {
             <ProtectedRoute>
                 <SubmitTalk />
