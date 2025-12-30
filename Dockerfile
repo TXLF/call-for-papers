@@ -2,7 +2,7 @@
 # This Dockerfile builds both the frontend (Yew.rs) and backend (Rust/Axum)
 
 # Stage 1: Build Frontend
-FROM docker.io/library/rust:1.75-slim as frontend-builder
+FROM docker.io/library/rust:1.92-slim as frontend-builder
 
 # Install dependencies for WASM compilation
 RUN apt-get update && apt-get install -y \
@@ -26,7 +26,7 @@ COPY frontend/Trunk.toml ./
 RUN trunk build --release
 
 # Stage 2: Build Backend
-FROM docker.io/library/rust:1.75-slim as backend-builder
+FROM docker.io/library/rust:1.92-slim as backend-builder
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
