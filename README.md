@@ -74,14 +74,75 @@ The system uses a configuration file to support different conferences:
 
 ## Getting Started
 
-### Prerequisites
+### Quick Install (Production)
+
+The easiest way to install Call for Papers is using our automated installers.
+
+#### Debian/Ubuntu (Recommended)
+
+```bash
+# Download and run the installer
+wget https://raw.githubusercontent.com/TXLF/call-for-papers/main/scripts/install-deb.sh
+sudo bash install-deb.sh
+
+# Configure database and settings
+sudo nano /etc/call-for-papers/config.toml
+
+# Start the service
+sudo systemctl enable call-for-papers
+sudo systemctl start call-for-papers
+```
+
+The Debian package provides:
+- Automatic dependency installation
+- Systemd service integration
+- Standard package management (`apt remove call-for-papers`)
+- Follows Linux Filesystem Hierarchy Standard
+
+#### Other Platforms (Linux, macOS)
+
+```bash
+# Download and run the binary installer
+wget https://raw.githubusercontent.com/TXLF/call-for-papers/main/scripts/install-binary.sh
+sudo bash install-binary.sh
+
+# Configure settings
+sudo nano /etc/default/call-for-papers
+
+# Start the service
+sudo systemctl enable call-for-papers
+sudo systemctl start call-for-papers
+```
+
+Supported platforms:
+- Linux x86_64 (Intel/AMD 64-bit)
+- Linux ARM64 (ARM 64-bit)
+- macOS x86_64 (Intel Macs)
+- macOS ARM64 (Apple Silicon)
+
+#### Pre-built Binaries
+
+Download pre-built binaries from the [releases page](https://github.com/TXLF/call-for-papers/releases):
+- Debian/Ubuntu: `.deb` package
+- Linux/macOS: `.tar.gz` archives
+- Frontend assets: `frontend-dist.tar.gz`
+
+For detailed deployment instructions, see **[scripts/README.md](scripts/README.md)**.
+
+---
+
+### Development Setup
+
+For contributors and developers who want to build from source:
+
+#### Prerequisites
 
 - Rust (latest stable version)
 - PostgreSQL 12+
 - Trunk (WASM build tool: `cargo install trunk`)
 - wasm32-unknown-unknown target (`rustup target add wasm32-unknown-unknown`)
 
-### Installation
+#### Building from Source
 
 ```bash
 # Clone the repository
@@ -107,7 +168,7 @@ EOF
 cargo run
 ```
 
-For detailed setup instructions including database configuration, environment variables, and troubleshooting, see **[DEVELOPMENT.md](DEVELOPMENT.md)**.
+For detailed development setup including database configuration, environment variables, and troubleshooting, see **[DEVELOPMENT.md](DEVELOPMENT.md)**.
 
 ## Documentation
 
@@ -211,15 +272,41 @@ cargo build --release
 
 ## Deployment
 
-The system is designed for self-hosting on bare EC2 instances:
+The system is designed for self-hosting on bare EC2 instances or any Linux server.
 
-1. Deploy PostgreSQL database
-2. Copy the compiled binary to your server
-3. Set up environment variables or configuration file
-4. Run the binary behind a reverse proxy (Envoy recommended)
-5. Configure HTTPS with Let's Encrypt
+### Automated Installation
 
-See `scripts/README.md` for detailed deployment instructions.
+Use our installation scripts for quick deployment:
+
+```bash
+# Debian/Ubuntu (recommended)
+wget https://raw.githubusercontent.com/TXLF/call-for-papers/main/scripts/install-deb.sh
+sudo bash install-deb.sh
+
+# Other Linux distributions or macOS
+wget https://raw.githubusercontent.com/TXLF/call-for-papers/main/scripts/install-binary.sh
+sudo bash install-binary.sh
+```
+
+### Deployment Steps
+
+1. **Install the application** using automated installer
+2. **Deploy PostgreSQL database**
+   ```bash
+   sudo -u postgres createdb call_for_papers
+   ```
+3. **Configure the application**
+   - Edit `/etc/call-for-papers/config.toml` (Debian package)
+   - Or set environment variables in `/etc/default/call-for-papers`
+4. **Start the service**
+   ```bash
+   sudo systemctl enable call-for-papers
+   sudo systemctl start call-for-papers
+   ```
+5. **Set up reverse proxy** (Nginx, Apache, or Envoy)
+6. **Configure HTTPS** with Let's Encrypt
+
+For detailed deployment instructions including Docker Compose, SSL setup, monitoring, and troubleshooting, see **[scripts/README.md](scripts/README.md)**.
 
 ## AI Integration
 
