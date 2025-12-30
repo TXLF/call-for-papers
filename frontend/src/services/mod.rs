@@ -7,3 +7,4 @@ pub mod tracks;
 pub mod schedule_slots;
 pub mod conferences;
 pub mod email_templates;
+pub mod bulk_email;

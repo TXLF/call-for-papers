@@ -327,3 +327,20 @@ pub struct UpdateEmailTemplateRequest {
     pub body: Option<String>,
     pub is_default: Option<bool>,
 }
+
+#[derive(Debug, Serialize)]
+pub struct BulkEmailRequest {
+    pub filter_by_state: Option<Vec<TalkState>>,
+    pub talk_ids: Option<Vec<String>>,
+    pub template_id: Option<String>,
+    pub custom_subject: Option<String>,
+    pub custom_body: Option<String>,
+    pub additional_message: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct BulkEmailResponse {
+    pub emails_sent: usize,
+    pub failed_emails: usize,
+    pub errors: Vec<String>,
+}

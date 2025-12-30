@@ -80,6 +80,8 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/email-templates", post(handlers::create_email_template))
         .route("/email-templates/:id", put(handlers::update_email_template))
         .route("/email-templates/:id", delete(handlers::delete_email_template))
+        // Bulk email route (organizer only)
+        .route("/bulk-email", post(handlers::send_bulk_email))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::auth_middleware,

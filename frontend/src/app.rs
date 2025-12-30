@@ -10,7 +10,7 @@ use crate::pages::{
     ratings_dashboard::RatingsDashboard, manage_tracks::ManageTracks,
     manage_schedule_slots::ManageScheduleSlots, assign_talks::AssignTalks,
     schedule_builder::ScheduleBuilder, public_schedule::PublicSchedule,
-    manage_email_templates::ManageEmailTemplates,
+    manage_email_templates::ManageEmailTemplates, bulk_email::BulkEmail,
 };
 use crate::services::auth::AuthService;
 
@@ -50,6 +50,8 @@ pub enum Route {
     ScheduleBuilder,
     #[at("/organizer/email-templates")]
     ManageEmailTemplates,
+    #[at("/organizer/bulk-email")]
+    BulkEmail,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -122,6 +124,11 @@ fn switch(routes: Route) -> Html {
                 <ManageEmailTemplates />
             </OrganizerRoute>
         },
+        Route::BulkEmail => html! {
+            <OrganizerRoute>
+                <BulkEmail />
+            </OrganizerRoute>
+        },
         Route::NotFound => html! { <NotFound /> },
     }
 }
@@ -177,6 +184,7 @@ fn app_content() -> Html {
                                 <Link<Route> to={Route::ScheduleBuilder}>{ "Schedule Builder" }</Link<Route>>
                                 <Link<Route> to={Route::RatingsDashboard}>{ "Ratings Dashboard" }</Link<Route>>
                                 <Link<Route> to={Route::ManageEmailTemplates}>{ "Email Templates" }</Link<Route>>
+                                <Link<Route> to={Route::BulkEmail}>{ "Bulk Email" }</Link<Route>>
                             }
                             <button onclick={on_logout} class="logout-button">{ "Logout" }</button>
                         </>
