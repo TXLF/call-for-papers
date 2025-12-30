@@ -1256,12 +1256,12 @@ pub async fn create_talk(
 
 ## Further Reading
 
+- **[API Documentation](api.md)** - Complete REST API reference with examples
 - **[DEVELOPMENT.md](../DEVELOPMENT.md)** - Development setup and workflow
 - **[DATABASE_SETUP.md](../DATABASE_SETUP.md)** - Database configuration
 - **[scripts/README.md](../scripts/README.md)** - Deployment guide
 - **[Organizer Guide](organizer-guide.md)** - User guide for organizers
 - **[Speaker Guide](speaker-guide.md)** - User guide for speakers
-- **[API Documentation](api.md)** - API reference (to be created)
 
 ---
 

@@ -179,6 +179,7 @@ For detailed development setup including database configuration, environment var
 
 ### Technical Documentation
 
+- **[API Documentation](docs/api.md)** - Complete REST API reference with examples and integration guides
 - **[Architecture Guide](docs/architecture.md)** - System architecture, design decisions, diagrams, and implementation patterns
 - **[Development Guide](DEVELOPMENT.md)** - Setup instructions, development workflow, and troubleshooting
 - **[Database Setup](DATABASE_SETUP.md)** - Database configuration and migration instructions
