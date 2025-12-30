@@ -114,7 +114,7 @@ For detailed setup instructions including database configuration, environment va
 ### User Guides
 
 - **[Organizer Guide](docs/organizer-guide.md)** - Complete guide for conference organizers covering talk management, ratings, AI features, schedule building, and communication tools
-- **Speaker Guide** - Coming soon - Guide for speakers on submitting talks and responding to acceptances
+- **[Speaker Guide](docs/speaker-guide.md)** - Complete guide for speakers covering account creation, talk submission, status tracking, and presentation preparation
 
 ### Technical Documentation
 
