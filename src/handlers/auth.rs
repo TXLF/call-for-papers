@@ -1879,3 +1879,72 @@ pub async fn linkedin_callback(
     // Redirect to frontend with token
     Ok(Redirect::to(&format!("/auth/callback?token={}", token)))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hash_password_creates_valid_hash() {
+        let password = "secure_password_123";
+        let result = hash_password(password);
+
+        assert!(result.is_ok());
+        let hash = result.unwrap();
+        assert!(!hash.is_empty());
+        assert!(hash.starts_with("$argon2"));
+    }
+
+    #[test]
+    fn test_hash_password_generates_different_hashes() {
+        let password = "test_password";
+        let hash1 = hash_password(password).unwrap();
+        let hash2 = hash_password(password).unwrap();
+
+        // Same password should generate different hashes due to different salts
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_verify_password_success() {
+        let password = "my_secure_password";
+        let hash = hash_password(password).unwrap();
+
+        let result = verify_password(password, &hash);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_verify_password_wrong_password() {
+        let password = "correct_password";
+        let hash = hash_password(password).unwrap();
+
+        let result = verify_password("wrong_password", &hash);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_verify_password_invalid_hash() {
+        let result = verify_password("password", "invalid_hash");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_error_response_creation() {
+        let error = ErrorResponse::new("Test error message");
+        assert_eq!(error.error, "Test error message");
+    }
+
+    #[test]
+    fn test_error_response_from_string() {
+        let error = ErrorResponse::new(String::from("Another error"));
+        assert_eq!(error.error, "Another error");
+    }
+
+    #[test]
+    fn test_auth_provider_type_equality() {
+        assert_eq!(AuthProviderType::Google, AuthProviderType::Google);
+        assert_ne!(AuthProviderType::Google, AuthProviderType::Github);
+        assert_ne!(AuthProviderType::Local, AuthProviderType::Apple);
+    }
+}

@@ -208,3 +208,149 @@ impl Config {
         Self::load()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+
+    #[test]
+    fn test_load_default_config() {
+        let result = Config::load_default_config();
+        assert!(result.is_ok(), "Default config should load successfully");
+
+        let config = result.unwrap();
+        assert_eq!(config.conference.short_name, "TXLF");
+        assert_eq!(config.conference.name, "Texas Linux Fest");
+        assert_eq!(config.server.port, 8080);
+        assert_eq!(config.server.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn test_default_config_has_valid_toml() {
+        let default_toml = include_str!("../../config.default.toml");
+        let result: Result<FileConfig, _> = toml::from_str(default_toml);
+        assert!(result.is_ok(), "Default TOML should parse correctly");
+    }
+
+    #[test]
+    fn test_conference_config_defaults() {
+        let config = Config::load_default_config().unwrap();
+        assert_eq!(config.conference.year, 2025);
+        assert!(!config.conference.website.is_empty());
+        assert!(!config.conference.location.is_empty());
+    }
+
+    #[test]
+    fn test_branding_config_defaults() {
+        let config = Config::load_default_config().unwrap();
+        assert!(!config.branding.primary_color.is_empty());
+        assert!(!config.branding.logo_light.is_empty());
+        assert!(config.branding.primary_color.starts_with('#'));
+    }
+
+    #[test]
+    fn test_features_config_defaults() {
+        let config = Config::load_default_config().unwrap();
+        assert!(config.features.enable_speaker_registration);
+        assert!(config.features.enable_ratings);
+        assert!(config.features.enable_ai_tagging);
+    }
+
+    #[test]
+    fn test_submission_config_defaults() {
+        let config = Config::load_default_config().unwrap();
+        assert_eq!(config.submission.min_title_length, 5);
+        assert_eq!(config.submission.max_title_length, 200);
+        assert!(config.submission.allowed_slide_formats.contains(&"pdf".to_string()));
+    }
+
+    #[test]
+    fn test_labels_config_defaults() {
+        let config = Config::load_default_config().unwrap();
+        assert!(!config.labels.default_labels.is_empty());
+        assert!(config.labels.default_labels.contains(&"Linux".to_string()));
+        assert!(config.labels.default_labels.contains(&"Open Source".to_string()));
+    }
+
+    #[test]
+    fn test_security_config_defaults() {
+        let config = Config::load_default_config().unwrap();
+        assert_eq!(config.security.jwt_expiry_hours, 24);
+        assert!(config.security.enable_rate_limiting);
+        assert_eq!(config.security.rate_limit_requests_per_minute, 60);
+    }
+
+    #[test]
+    fn test_config_load_with_jwt_secret() {
+        // Set JWT_SECRET for this test
+        env::set_var("JWT_SECRET", "test_secret_key_for_testing");
+
+        let result = Config::load();
+        assert!(result.is_ok(), "Config should load with JWT_SECRET set");
+
+        let config = result.unwrap();
+        assert_eq!(config.jwt_secret, "test_secret_key_for_testing");
+        assert_eq!(config.conference.short_name, "TXLF");
+
+        // Clean up
+        env::remove_var("JWT_SECRET");
+    }
+
+    #[test]
+    #[should_panic(expected = "JWT_SECRET must be set")]
+    fn test_config_load_without_jwt_secret() {
+        // Ensure JWT_SECRET is not set
+        env::remove_var("JWT_SECRET");
+
+        // This should panic
+        let _ = Config::load();
+    }
+
+    #[test]
+    fn test_env_var_overrides() {
+        env::set_var("JWT_SECRET", "test_secret");
+        env::set_var("SERVER_HOST", "127.0.0.1");
+        env::set_var("SERVER_PORT", "3000");
+        env::set_var("UPLOAD_DIR", "/custom/uploads");
+
+        let config = Config::load().unwrap();
+
+        assert_eq!(config.server_host, "127.0.0.1");
+        assert_eq!(config.server_port, 3000);
+        assert_eq!(config.upload_dir, "/custom/uploads");
+
+        // Clean up
+        env::remove_var("JWT_SECRET");
+        env::remove_var("SERVER_HOST");
+        env::remove_var("SERVER_PORT");
+        env::remove_var("UPLOAD_DIR");
+    }
+
+    #[test]
+    fn test_oauth_config_optional() {
+        env::set_var("JWT_SECRET", "test_secret");
+
+        let config = Config::load().unwrap();
+
+        // OAuth configs should be None when not set
+        assert!(config.google_client_id.is_none());
+        assert!(config.github_client_id.is_none());
+        assert!(config.apple_client_id.is_none());
+
+        env::remove_var("JWT_SECRET");
+    }
+
+    #[test]
+    fn test_ai_api_keys_optional() {
+        env::set_var("JWT_SECRET", "test_secret");
+
+        let config = Config::load().unwrap();
+
+        // AI API keys should be None when not set
+        assert!(config.claude_api_key.is_none());
+        assert!(config.openai_api_key.is_none());
+
+        env::remove_var("JWT_SECRET");
+    }
+}

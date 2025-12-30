@@ -124,3 +124,62 @@ Do not include any other text or explanation."#,
         Ok(labels)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_test_config(with_key: bool) -> Config {
+        std::env::set_var("JWT_SECRET", "test_secret");
+        let mut config = Config::load().unwrap();
+        if with_key {
+            config.openai_api_key = Some("test_key".to_string());
+        } else {
+            config.openai_api_key = None;
+        }
+        std::env::remove_var("JWT_SECRET");
+        config
+    }
+
+    #[test]
+    fn test_openai_service_is_configured_with_key() {
+        let config = create_test_config(true);
+        let service = OpenAIService::new(&config);
+        assert!(service.is_configured());
+    }
+
+    #[test]
+    fn test_openai_service_is_not_configured_without_key() {
+        let config = create_test_config(false);
+        let service = OpenAIService::new(&config);
+        assert!(!service.is_configured());
+    }
+
+    #[test]
+    fn test_openai_service_initialization() {
+        let config = create_test_config(true);
+        let service = OpenAIService::new(&config);
+        assert!(service.api_key.is_some());
+        assert_eq!(service.api_key.unwrap(), "test_key");
+    }
+
+    #[tokio::test]
+    async fn test_suggest_labels_without_api_key() {
+        let config = create_test_config(false);
+        let service = OpenAIService::new(&config);
+
+        let result = service.suggest_labels("test talks").await;
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "OpenAI API key not configured");
+    }
+
+    #[test]
+    fn test_openai_service_clone() {
+        let config = create_test_config(true);
+        let service = OpenAIService::new(&config);
+        let cloned_service = service.clone();
+
+        assert_eq!(service.api_key, cloned_service.api_key);
+        assert_eq!(service.is_configured(), cloned_service.is_configured());
+    }
+}
