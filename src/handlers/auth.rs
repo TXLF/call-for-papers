@@ -22,7 +22,7 @@ use uuid::Uuid;
 use crate::{
     api::AppState,
     models::{
-        auth::{AuthProviderType, ErrorResponse, GoogleUserInfo, GitHubUserInfo, GitHubEmail, AppleUserData, FacebookUserInfo, OAuthCallbackQuery},
+        auth::{AuthProviderType, ErrorResponse, GoogleUserInfo, GitHubUserInfo, GitHubEmail, AppleUserData, FacebookUserInfo, LinkedInUserInfo, OAuthCallbackQuery},
         user::UserResponse,
         AuthResponse, Claims, LoginRequest, RegisterRequest, User
     },
@@ -1542,4 +1542,340 @@ pub async fn facebook_callback(
     // Redirect to frontend with token
     let redirect_url = format!("/auth/callback?token={}", token);
     Ok(Redirect::to(&redirect_url))
+}
+
+// LinkedIn OAuth helpers
+fn get_linkedin_oauth_client(
+    client_id: &str,
+    client_secret: &str,
+    redirect_url: &str,
+) -> Result<BasicClient, anyhow::Error> {
+    let auth_url = AuthUrl::new("https://www.linkedin.com/oauth/v2/authorization".to_string())?;
+    let token_url = TokenUrl::new("https://www.linkedin.com/oauth/v2/accessToken".to_string())?;
+
+    let client = BasicClient::new(
+        ClientId::new(client_id.to_string()),
+        Some(ClientSecret::new(client_secret.to_string())),
+        auth_url,
+        Some(token_url),
+    )
+    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?);
+
+    Ok(client)
+}
+
+pub async fn linkedin_authorize(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let linkedin_client_id = state
+        .config
+        .linkedin_client_id
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("LinkedIn OAuth not configured")),
+            )
+        })?;
+
+    let linkedin_client_secret = state
+        .config
+        .linkedin_client_secret
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("LinkedIn OAuth not configured")),
+            )
+        })?;
+
+    let linkedin_redirect_url = state
+        .config
+        .linkedin_redirect_url
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("LinkedIn OAuth not configured")),
+            )
+        })?;
+
+    let client = get_linkedin_oauth_client(
+        linkedin_client_id,
+        linkedin_client_secret,
+        linkedin_redirect_url,
+    )
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new(format!(
+                "Failed to create LinkedIn OAuth client: {}",
+                e
+            ))),
+        )
+    })?;
+
+    let (auth_url, _csrf_token) = client
+        .authorize_url(CsrfToken::new_random)
+        .add_scope(Scope::new("openid".to_string()))
+        .add_scope(Scope::new("profile".to_string()))
+        .add_scope(Scope::new("email".to_string()))
+        .url();
+
+    Ok(Redirect::to(auth_url.as_str()))
+}
+
+pub async fn linkedin_callback(
+    State(state): State<AppState>,
+    Query(query): Query<OAuthCallbackQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let linkedin_client_id = state
+        .config
+        .linkedin_client_id
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("LinkedIn OAuth not configured")),
+            )
+        })?;
+
+    let linkedin_client_secret = state
+        .config
+        .linkedin_client_secret
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("LinkedIn OAuth not configured")),
+            )
+        })?;
+
+    let linkedin_redirect_url = state
+        .config
+        .linkedin_redirect_url
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("LinkedIn OAuth not configured")),
+            )
+        })?;
+
+    let client = get_linkedin_oauth_client(
+        linkedin_client_id,
+        linkedin_client_secret,
+        linkedin_redirect_url,
+    )
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new(format!(
+                "Failed to create LinkedIn OAuth client: {}",
+                e
+            ))),
+        )
+    })?;
+
+    // Exchange the code for an access token
+    let token_result = client
+        .exchange_code(AuthorizationCode::new(query.code.clone()))
+        .request_async(async_http_client)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new(format!(
+                    "Failed to exchange code for token: {}",
+                    e
+                ))),
+            )
+        })?;
+
+    let access_token = token_result.access_token().secret();
+
+    // Fetch user info from LinkedIn using OpenID Connect userinfo endpoint
+    let client = reqwest::Client::new();
+    let linkedin_user: LinkedInUserInfo = client
+        .get("https://api.linkedin.com/v2/userinfo")
+        .header("Authorization", format!("Bearer {}", access_token))
+        .send()
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new(format!(
+                    "Failed to fetch LinkedIn user info: {}",
+                    e
+                ))),
+            )
+        })?
+        .json()
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new(format!(
+                    "Failed to parse LinkedIn user info: {}",
+                    e
+                ))),
+            )
+        })?;
+
+    // Check if email is provided (it's required by our scope)
+    let email = linkedin_user.email.clone();
+
+    // Check if this LinkedIn account is already linked
+    let existing_provider = sqlx::query!(
+        r#"
+        SELECT user_id
+        FROM auth_providers
+        WHERE provider = 'linkedin' AND provider_user_id = $1
+        "#,
+        linkedin_user.sub
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new(format!("Database error: {}", e))),
+        )
+    })?;
+
+    let user_id = if let Some(provider) = existing_provider {
+        // User already exists with this LinkedIn account
+        provider.user_id
+    } else {
+        // Check if a user with this email already exists
+        let existing_user = sqlx::query_as!(
+            User,
+            r#"
+            SELECT id, email, username, password_hash, full_name, bio, is_organizer, created_at, updated_at
+            FROM users
+            WHERE email = $1
+            "#,
+            email
+        )
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new(format!("Database error: {}", e))),
+            )
+        })?;
+
+        let user_id = if let Some(user) = existing_user {
+            // Link this LinkedIn account to the existing user
+            user.id
+        } else {
+            // Create a new user
+            let new_user = sqlx::query!(
+                r#"
+                INSERT INTO users (email, full_name, password_hash, is_organizer)
+                VALUES ($1, $2, NULL, FALSE)
+                RETURNING id
+                "#,
+                email,
+                linkedin_user.name
+            )
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new(format!("Failed to create user: {}", e))),
+                )
+            })?;
+
+            new_user.id
+        };
+
+        // Link the LinkedIn account to the user
+        sqlx::query!(
+            r#"
+            INSERT INTO auth_providers (user_id, provider, provider_user_id, provider_data)
+            VALUES ($1, 'linkedin', $2, $3)
+            "#,
+            user_id,
+            linkedin_user.sub,
+            serde_json::to_value(&linkedin_user).unwrap()
+        )
+        .execute(&state.db)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new(format!(
+                    "Failed to link LinkedIn account: {}",
+                    e
+                ))),
+            )
+        })?;
+
+        user_id
+    };
+
+    // Fetch the complete user
+    let user = sqlx::query_as!(
+        User,
+        r#"
+        SELECT id, email, username, password_hash, full_name, bio, is_organizer, created_at, updated_at
+        FROM users
+        WHERE id = $1
+        "#,
+        user_id
+    )
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new(format!("Database error: {}", e))),
+        )
+    })?;
+
+    // Generate JWT token
+    let claims = Claims {
+        sub: user.id.to_string(),
+        email: user.email.clone(),
+        is_organizer: user.is_organizer,
+        exp: (Utc::now() + chrono::Duration::hours(state.config.jwt_expiry_hours)).timestamp()
+            as usize,
+    };
+
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(state.config.jwt_secret.as_bytes()),
+    )
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new(format!("Failed to generate token: {}", e))),
+        )
+    })?;
+
+    // Store session
+    sqlx::query!(
+        r#"
+        INSERT INTO sessions (user_id, token, expires_at)
+        VALUES ($1, $2, $3)
+        "#,
+        user.id,
+        token,
+        Utc::now() + chrono::Duration::hours(state.config.jwt_expiry_hours)
+    )
+    .execute(&state.db)
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new(format!("Failed to create session: {}", e))),
+        )
+    })?;
+
+    // Redirect to frontend with token
+    Ok(Redirect::to(&format!("/auth/callback?token={}", token)))
 }

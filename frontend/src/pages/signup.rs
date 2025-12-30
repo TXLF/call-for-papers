@@ -245,6 +245,10 @@ pub fn signup() -> Html {
                     <span>{ "Continue with Facebook" }</span>
                 </a>
 
+                <a href="/api/auth/linkedin" class="oauth-button linkedin-button">
+                    <span>{ "Continue with LinkedIn" }</span>
+                </a>
+
                 <p class="auth-link">
                     { "Already have an account? " }
                     <Link<Route> to={Route::Login}>{ "Login" }</Link<Route>>

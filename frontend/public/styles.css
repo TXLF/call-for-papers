@@ -308,6 +308,17 @@ input:focus, textarea:focus, select:focus {
     border-color: #1877f2;
 }
 
+.linkedin-button {
+    border-color: #0A66C2;
+    color: #0A66C2;
+    margin-top: 0.75rem;
+}
+
+.linkedin-button:hover {
+    background: #f0f7ff;
+    border-color: #0A66C2;
+}
+
 /* Talk Cards */
 .talks-container {
     max-width: 1000px;

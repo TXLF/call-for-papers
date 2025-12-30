@@ -22,6 +22,9 @@ pub struct Config {
     pub facebook_client_id: Option<String>,
     pub facebook_client_secret: Option<String>,
     pub facebook_redirect_url: Option<String>,
+    pub linkedin_client_id: Option<String>,
+    pub linkedin_client_secret: Option<String>,
+    pub linkedin_redirect_url: Option<String>,
 }
 
 impl Config {
@@ -68,6 +71,10 @@ impl Config {
         let facebook_client_secret = std::env::var("FACEBOOK_CLIENT_SECRET").ok();
         let facebook_redirect_url = std::env::var("FACEBOOK_REDIRECT_URL").ok();
 
+        let linkedin_client_id = std::env::var("LINKEDIN_CLIENT_ID").ok();
+        let linkedin_client_secret = std::env::var("LINKEDIN_CLIENT_SECRET").ok();
+        let linkedin_redirect_url = std::env::var("LINKEDIN_REDIRECT_URL").ok();
+
         Ok(Config {
             database_url,
             server_host,
@@ -89,6 +96,9 @@ impl Config {
             facebook_client_id,
             facebook_client_secret,
             facebook_redirect_url,
+            linkedin_client_id,
+            linkedin_client_secret,
+            linkedin_redirect_url,
         })
     }
 }

@@ -10,6 +10,7 @@ pub enum AuthProviderType {
     Facebook,
     Github,
     Apple,
+    Linkedin,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -76,6 +77,14 @@ pub struct FacebookUserInfo {
     pub id: String,  // Facebook user ID
     pub name: Option<String>,
     pub email: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LinkedInUserInfo {
+    pub sub: String,  // LinkedIn user ID
+    pub email: String,
+    pub name: String,
+    pub picture: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
