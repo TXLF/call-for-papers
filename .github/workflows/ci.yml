@@ -59,11 +59,15 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run clippy
+        env:
+          SQLX_OFFLINE: true
         run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Run tests
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
+          SQLX_OFFLINE: true
+          JWT_SECRET: test_jwt_secret_for_ci_pipeline_testing_only
         run: cargo test --verbose
 
   build-backend:
@@ -94,6 +98,8 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build backend
+        env:
+          SQLX_OFFLINE: true
         run: cargo build --release --verbose
 
       - name: Upload backend artifact

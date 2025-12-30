@@ -1,0 +1,211 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build Release Binaries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: call-for-papers-linux-amd64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact_name: call-for-papers-linux-amd64-musl
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact_name: call-for-papers-linux-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: call-for-papers-macos-amd64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: call-for-papers-macos-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compilation tools (Linux ARM64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Install musl tools
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build binary
+        env:
+          SQLX_OFFLINE: true
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip binary (Linux)
+        if: runner.os == 'Linux'
+        run: strip target/${{ matrix.target }}/release/call-for-papers
+
+      - name: Strip binary (macOS)
+        if: runner.os == 'macOS'
+        run: strip target/${{ matrix.target }}/release/call-for-papers
+
+      - name: Create archive
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf ../../../${{ matrix.artifact_name }}.tar.gz call-for-papers
+          cd ../../..
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.tar.gz
+
+  build-frontend:
+    name: Build Frontend Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Trunk
+        run: cargo install trunk --version 0.18.8
+
+      - name: Build frontend
+        working-directory: frontend
+        run: trunk build --release
+
+      - name: Create frontend archive
+        run: |
+          cd frontend
+          tar czf ../frontend-dist.tar.gz dist
+          cd ..
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist.tar.gz
+
+  create-release:
+    name: Create GitHub Release
+    needs: [build-release, build-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## Call for Papers ${{ steps.version.outputs.version }}
+
+          ### Installation
+
+          Download the appropriate binary for your platform:
+
+          - **Linux (x86_64)**: `call-for-papers-linux-amd64.tar.gz`
+          - **Linux (ARM64)**: `call-for-papers-linux-arm64.tar.gz`
+          - **Linux (musl)**: `call-for-papers-linux-amd64-musl.tar.gz`
+          - **macOS (Intel)**: `call-for-papers-macos-amd64.tar.gz`
+          - **macOS (Apple Silicon)**: `call-for-papers-macos-arm64.tar.gz`
+          - **Frontend**: `frontend-dist.tar.gz`
+
+          ### Quick Start
+
+          ```bash
+          # Extract the binary
+          tar xzf call-for-papers-*.tar.gz
+
+          # Make it executable
+          chmod +x call-for-papers
+
+          # Run the server
+          export JWT_SECRET="your-secret-key"
+          export DATABASE_URL="postgres://user:pass@localhost/cfp"
+          ./call-for-papers
+          ```
+
+          ### Docker
+
+          ```bash
+          docker pull ghcr.io/txlf/call-for-papers:${{ steps.version.outputs.version }}
+          ```
+
+          ### What's Changed
+
+          See the [full changelog](https://github.com/TXLF/call-for-papers/compare/v${{ steps.version.outputs.previous }}...v${{ steps.version.outputs.version }})
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/**/*.tar.gz
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

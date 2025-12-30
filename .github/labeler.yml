@@ -1,0 +1,74 @@
+# Configuration for actions/labeler
+# https://github.com/actions/labeler
+
+# Backend changes
+'backend':
+  - changed-files:
+    - any-glob-to-any-file: 'src/**/*.rs'
+    - any-glob-to-any-file: 'Cargo.toml'
+    - any-glob-to-any-file: 'Cargo.lock'
+
+# Frontend changes
+'frontend':
+  - changed-files:
+    - any-glob-to-any-file: 'frontend/**/*.rs'
+    - any-glob-to-any-file: 'frontend/Cargo.toml'
+    - any-glob-to-any-file: 'frontend/**/*.html'
+    - any-glob-to-any-file: 'frontend/**/*.css'
+
+# Database changes
+'database':
+  - changed-files:
+    - any-glob-to-any-file: 'migrations/**/*'
+    - any-glob-to-any-file: '**/schema.sql'
+
+# Configuration changes
+'configuration':
+  - changed-files:
+    - any-glob-to-any-file: 'config*.toml'
+    - any-glob-to-any-file: 'src/config/**/*'
+    - any-glob-to-any-file: '.env*'
+
+# Documentation changes
+'documentation':
+  - changed-files:
+    - any-glob-to-any-file: '**/*.md'
+    - any-glob-to-any-file: 'docs/**/*'
+
+# CI/CD changes
+'ci/cd':
+  - changed-files:
+    - any-glob-to-any-file: '.github/**/*'
+    - any-glob-to-any-file: 'Dockerfile'
+    - any-glob-to-any-file: 'docker-compose*.yml'
+    - any-glob-to-any-file: '.dockerignore'
+
+# Testing changes
+'testing':
+  - changed-files:
+    - any-glob-to-any-file: '**/*test*.rs'
+    - any-glob-to-any-file: 'tests/**/*'
+
+# Dependencies
+'dependencies':
+  - changed-files:
+    - any-glob-to-any-file: 'Cargo.toml'
+    - any-glob-to-any-file: 'Cargo.lock'
+    - any-glob-to-any-file: 'frontend/Cargo.toml'
+
+# Security
+'security':
+  - changed-files:
+    - any-glob-to-any-file: '**/auth*.rs'
+    - any-glob-to-any-file: '**/security*.rs'
+
+# API changes
+'api':
+  - changed-files:
+    - any-glob-to-any-file: 'src/handlers/**/*'
+    - any-glob-to-any-file: 'src/api/**/*'
+
+# Models/Database changes
+'models':
+  - changed-files:
+    - any-glob-to-any-file: 'src/models/**/*'
