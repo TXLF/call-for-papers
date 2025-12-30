@@ -1,0 +1,83 @@
+# Pre-commit hooks configuration
+# Install: pip install pre-commit && pre-commit install
+# Update hooks: pre-commit autoupdate
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(.*\.md|.*\.txt)$
+      - id: end-of-file-fixer
+        exclude: ^(.*\.md|.*\.txt)$
+      - id: check-yaml
+        args: ['--unsafe']
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+
+  # Rust-specific checks
+  - repo: local
+    hooks:
+      # Format check
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt --all -- --check
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Linting
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: bash -c 'SQLX_OFFLINE=true cargo clippy --all-targets --all-features -- -D warnings'
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Unit tests
+      - id: cargo-test-lib
+        name: cargo test (unit tests)
+        entry: bash -c 'SQLX_OFFLINE=true cargo test --lib'
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Check for TODO/FIXME comments (warning only)
+      - id: check-todos
+        name: check for TODOs
+        entry: bash -c 'git grep -n "TODO\|FIXME" -- "*.rs" || true'
+        language: system
+        types: [rust]
+        pass_filenames: false
+        verbose: true
+
+  # Markdown linting (optional)
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix']
+        exclude: ^(CHANGELOG\.md|target/)
+
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: ['-d', '{extends: default, rules: {line-length: {max: 120}, document-start: disable}}']
+
+# Configuration for pre-commit.ci service
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: monthly
+  skip: [cargo-test-lib]  # Skip integration tests in CI
+  submodules: false

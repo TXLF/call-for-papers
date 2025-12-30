@@ -1,5 +1,10 @@
 # Call for Papers (CFP) System
 
+[![CI](https://github.com/TXLF/call-for-papers/workflows/CI/badge.svg)](https://github.com/TXLF/call-for-papers/actions/workflows/ci.yml)
+[![Coverage](https://coveralls.io/repos/github/TXLF/call-for-papers/badge.svg?branch=main)](https://coveralls.io/github/TXLF/call-for-papers?branch=main)
+[![codecov](https://codecov.io/gh/TXLF/call-for-papers/branch/main/graph/badge.svg)](https://codecov.io/gh/TXLF/call-for-papers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 An open source call for papers management system designed for open source conferences. Built with Rust and Yew.rs, this self-hostable solution provides a complete workflow from talk submission to conference scheduling.
 
 ## Overview

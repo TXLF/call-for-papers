@@ -414,28 +414,137 @@ The integration test suite covers:
 ### Coverage Statistics
 
 ```bash
-# Generate coverage report (requires tarpaulin)
-cargo install cargo-tarpaulin
-cargo tarpaulin --out Html --output-dir coverage
+# Generate HTML coverage report locally
+make test-coverage
+# Opens: target/llvm-cov/html/index.html
+
+# Generate LCOV format for CI
+make test-coverage-ci
+# Creates: lcov.info
 ```
 
-## Continuous Integration
+## Test Automation
 
-### GitHub Actions Workflow
+### Makefile Targets
 
-The CI pipeline (`.github/workflows/ci.yml`) runs:
+The project includes comprehensive Makefile targets for test automation:
+
+```bash
+# Run all tests
+make test
+
+# Run only unit tests (fast, no database required)
+make test-unit
+
+# Run only integration tests (requires PostgreSQL)
+make test-integration
+
+# Run tests in watch mode (auto-rerun on changes)
+make test-watch
+
+# Generate test coverage report
+make test-coverage
+
+# Setup test database
+make db-setup
+
+# Setup pre-commit hooks
+make setup-hooks
+
+# Run all CI checks locally
+make ci-local
+```
+
+### Pre-commit Hooks
+
+Pre-commit hooks automatically run checks before each commit to catch issues early.
+
+#### Setup
+
+```bash
+# Install pre-commit hooks
+make setup-hooks
+
+# Or manually:
+pip install pre-commit
+pre-commit install
+```
+
+#### What Gets Checked
+
+The pre-commit hooks run:
+1. **File checks**: Trailing whitespace, end-of-file, large files, merge conflicts
+2. **Format check**: `cargo fmt --check`
+3. **Linting**: `cargo clippy --all-targets --all-features`
+4. **Unit tests**: `cargo test --lib`
+5. **YAML/Markdown linting**: For configuration and documentation files
+
+#### Manual Runs
+
+```bash
+# Run hooks on all files
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run cargo-fmt --all-files
+
+# Skip hooks for a commit (not recommended)
+git commit --no-verify
+```
+
+#### Configuration
+
+Hooks are configured in `.pre-commit-config.yaml`. Update versions with:
+
+```bash
+pre-commit autoupdate
+```
+
+### Continuous Integration
+
+### GitHub Actions Workflows
+
+The project uses multiple CI workflows for comprehensive testing:
+
+#### CI Workflow (`.github/workflows/ci.yml`)
+
+Runs on every push and PR:
 
 1. **Code Quality Checks**:
    - Format checking: `cargo fmt --check`
-   - Linting: `cargo clippy`
+   - Linting: `cargo clippy --all-targets --all-features`
 
 2. **Database Setup**:
-   - PostgreSQL service container
+   - PostgreSQL 16 service container
    - Run migrations with `sqlx migrate run`
 
 3. **Test Execution**:
    - Unit tests: `cargo test --lib`
    - Integration tests: `cargo test --test '*'`
+
+4. **Test Artifacts**:
+   - Upload test binaries for debugging (7-day retention)
+
+#### Coverage Workflow (`.github/workflows/coverage.yml`)
+
+Generates and reports code coverage:
+
+1. **Setup**:
+   - PostgreSQL database with migrations
+   - Install `cargo-llvm-cov`
+
+2. **Coverage Generation**:
+   - Run all tests with coverage instrumentation
+   - Generate LCOV and summary reports
+
+3. **Coverage Reporting**:
+   - Upload to Codecov
+   - Upload to Coveralls
+   - Comment coverage summary on PRs
+
+4. **Artifacts**:
+   - Coverage reports (30-day retention)
+   - Coverage summary text file
 
 ### CI Environment
 

@@ -52,10 +52,18 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features postgres
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
+        run: sqlx migrate run
+
       - name: Generate coverage
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
-          SQLX_OFFLINE: true
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
           JWT_SECRET: test_jwt_secret_for_coverage
         run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
@@ -73,8 +81,21 @@ jobs:
           path-to-lcov: lcov.info
 
       - name: Generate coverage summary
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
+          JWT_SECRET: test_jwt_secret_for_coverage
         run: |
           cargo llvm-cov --all-features --workspace --summary-only | tee coverage-summary.txt
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            lcov.info
+            coverage-summary.txt
+          retention-days: 30
 
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request'

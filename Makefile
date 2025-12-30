@@ -1,4 +1,4 @@
-.PHONY: help install build build-frontend build-backend test run clean dev-frontend
+.PHONY: help install build build-frontend build-backend test test-unit test-integration test-coverage test-coverage-ci test-watch test-frontend run clean dev-frontend dev-backend check fmt setup-hooks db-setup ci-local
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -25,10 +25,38 @@ build-backend: ## Build backend for production
 	cargo build --release
 	@echo "Backend built successfully at target/release/call-for-papers"
 
-test: ## Run all tests
+test: ## Run all tests (unit + integration)
 	@echo "Running backend tests..."
 	cargo test
 	@echo "All tests passed!"
+
+test-unit: ## Run unit tests only
+	@echo "Running unit tests..."
+	SQLX_OFFLINE=true cargo test --lib
+	@echo "Unit tests passed!"
+
+test-integration: ## Run integration tests only (requires PostgreSQL)
+	@echo "Running integration tests..."
+	@echo "Make sure PostgreSQL is running and test database exists!"
+	cargo test --test '*'
+	@echo "Integration tests passed!"
+
+test-watch: ## Run tests in watch mode (auto-rerun on changes)
+	@echo "Running tests in watch mode..."
+	@command -v cargo-watch >/dev/null 2>&1 || { echo "Installing cargo-watch..."; cargo install cargo-watch; }
+	SQLX_OFFLINE=true cargo watch -x "test --lib"
+
+test-coverage: ## Generate test coverage report (requires cargo-llvm-cov)
+	@echo "Generating test coverage..."
+	@command -v cargo-llvm-cov >/dev/null 2>&1 || { echo "Installing cargo-llvm-cov..."; cargo install cargo-llvm-cov; }
+	cargo llvm-cov --all-features --workspace --html
+	@echo "Coverage report generated at target/llvm-cov/html/index.html"
+
+test-coverage-ci: ## Generate coverage for CI (LCOV format)
+	@echo "Generating CI coverage report..."
+	@command -v cargo-llvm-cov >/dev/null 2>&1 || { echo "Installing cargo-llvm-cov..."; cargo install cargo-llvm-cov; }
+	cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+	@echo "Coverage report generated at lcov.info"
 
 test-frontend: ## Run frontend tests
 	@echo "Running frontend tests..."
@@ -63,3 +91,20 @@ fmt: ## Format all code
 	@echo "Formatting code..."
 	cargo fmt --all
 	@echo "Code formatted!"
+
+setup-hooks: ## Setup git pre-commit hooks
+	@echo "Setting up pre-commit hooks..."
+	@command -v pre-commit >/dev/null 2>&1 || { echo "Installing pre-commit (requires Python)..."; pip install pre-commit || pip3 install pre-commit; }
+	pre-commit install
+	@echo "Pre-commit hooks installed! Run 'pre-commit run --all-files' to test."
+
+db-setup: ## Setup test database
+	@echo "Setting up test database..."
+	psql -U postgres -c "DROP DATABASE IF EXISTS call_for_papers_test;" || true
+	psql -U postgres -c "CREATE DATABASE call_for_papers_test;"
+	@command -v sqlx >/dev/null 2>&1 || { echo "Installing sqlx-cli..."; cargo install sqlx-cli --no-default-features --features postgres; }
+	sqlx migrate run --database-url "postgres://postgres:postgres@localhost/call_for_papers_test"
+	@echo "Test database ready!"
+
+ci-local: check test ## Run CI checks locally (format, lint, test)
+	@echo "All CI checks passed locally!"
