@@ -296,3 +296,34 @@ pub struct PublicScheduleTalk {
     pub short_summary: String,
     pub speaker_name: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EmailTemplate {
+    pub id: String,
+    pub conference_id: String,
+    pub template_type: String,
+    pub name: String,
+    pub subject: String,
+    pub body: String,
+    pub is_default: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateEmailTemplateRequest {
+    pub conference_id: String,
+    pub template_type: String,
+    pub name: String,
+    pub subject: String,
+    pub body: String,
+    pub is_default: Option<bool>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateEmailTemplateRequest {
+    pub name: Option<String>,
+    pub subject: Option<String>,
+    pub body: Option<String>,
+    pub is_default: Option<bool>,
+}

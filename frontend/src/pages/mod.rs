@@ -15,3 +15,4 @@ pub mod manage_schedule_slots;
 pub mod assign_talks;
 pub mod schedule_builder;
 pub mod public_schedule;
+pub mod manage_email_templates;
