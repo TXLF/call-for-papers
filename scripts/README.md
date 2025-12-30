@@ -4,6 +4,11 @@ This directory contains scripts and configuration files for deploying and managi
 
 ## Contents
 
+### Installation Scripts
+
+- **`install-deb.sh`** - Install from Debian/Ubuntu package (recommended for Debian/Ubuntu)
+- **`install-binary.sh`** - Install from binary tarball (works on all platforms)
+
 ### Deployment Scripts
 
 - **`deploy.sh`** - Main production deployment script
@@ -18,47 +23,176 @@ This directory contains scripts and configuration files for deploying and managi
 - **`call-for-papers.service`** - Systemd service for native binary deployment
 - **`call-for-papers-docker.service`** - Systemd service for Docker Compose deployment
 
+## Installation Methods
+
+### Method 1: Automated Installation (Recommended)
+
+The easiest way to install Call for Papers is using our installation scripts. These scripts automatically download and set up the latest release.
+
+#### Debian/Ubuntu Package Installation
+
+For Debian and Ubuntu systems, install using the .deb package:
+
+```bash
+# Download and run the installer
+wget https://raw.githubusercontent.com/TXLF/call-for-papers/main/scripts/install-deb.sh
+sudo bash install-deb.sh
+
+# Or install a specific version
+sudo bash install-deb.sh v0.1.0
+```
+
+**Benefits:**
+- Automatic dependency installation
+- Systemd service automatically configured
+- Standard Debian/Ubuntu package management
+- Clean uninstall with `sudo apt remove call-for-papers`
+- Follows Filesystem Hierarchy Standard (FHS)
+
+**Locations:**
+- Binary: `/usr/bin/call-for-papers`
+- Config: `/etc/call-for-papers/`
+- Data: `/var/lib/call-for-papers/`
+- Logs: `/var/log/call-for-papers/`
+- Service: `/lib/systemd/system/call-for-papers.service`
+
+#### Binary Installation (All Platforms)
+
+For other Linux distributions, macOS, or manual installation:
+
+```bash
+# Download and run the installer
+wget https://raw.githubusercontent.com/TXLF/call-for-papers/main/scripts/install-binary.sh
+sudo bash install-binary.sh
+
+# Or install a specific version to a custom location
+sudo bash install-binary.sh v0.1.0 /opt/call-for-papers
+```
+
+**Supported platforms:**
+- Linux x86_64 (Intel/AMD 64-bit)
+- Linux ARM64 (ARM 64-bit)
+- macOS x86_64 (Intel Macs)
+- macOS ARM64 (Apple Silicon)
+
+**Default locations:**
+- Installation: `/opt/call-for-papers/`
+- Config: `/etc/call-for-papers/`
+- Environment: `/etc/default/call-for-papers`
+- Service: `/etc/systemd/system/call-for-papers.service`
+
+### Method 2: Manual Download
+
+Download pre-built binaries from the [releases page](https://github.com/TXLF/call-for-papers/releases):
+
+1. Download the appropriate file for your platform:
+   - Debian/Ubuntu: `call-for-papers_VERSION_amd64.deb`
+   - Linux x86_64: `call-for-papers-linux-amd64.tar.gz`
+   - Linux ARM64: `call-for-papers-linux-arm64.tar.gz`
+   - macOS Intel: `call-for-papers-macos-amd64.tar.gz`
+   - macOS ARM: `call-for-papers-macos-arm64.tar.gz`
+   - Frontend: `frontend-dist.tar.gz`
+
+2. Install the package or extract the binary
+3. Download and extract frontend assets
+4. Configure and run
+
+### Method 3: Docker Compose
+
+See [Docker Compose section](#option-1-docker-compose-recommended) below.
+
+### Method 4: Build from Source
+
+See the main [README.md](../README.md) and [DEVELOPMENT.md](../DEVELOPMENT.md) for build instructions.
+
+---
+
 ## Quick Start
 
-### Initial Deployment
+### After Installation
 
-1. **Prepare the server:**
+Once installed using the automated installers or deb package:
+
+1. **Configure Database:**
    ```bash
-   # Install Docker/Podman
-   sudo apt-get update
-   sudo apt-get install -y podman podman-compose
+   # Create PostgreSQL database
+   sudo -u postgres createdb call_for_papers
 
-   # Or for Docker:
-   sudo apt-get install -y docker.io docker-compose
+   # Set database URL (in config or environment file)
+   # For deb: /etc/call-for-papers/config.toml or /etc/default/call-for-papers
+   # For binary: /etc/default/call-for-papers
    ```
 
-2. **Deploy the application:**
+2. **Configure Application:**
    ```bash
-   # From your local machine, copy files to server
-   scp -r . user@server:/tmp/cfp
+   # Edit configuration (deb package)
+   sudo nano /etc/call-for-papers/config.toml
 
-   # On the server
-   cd /tmp/cfp
-   sudo ./scripts/deploy.sh
+   # Or set environment variables (both methods)
+   sudo nano /etc/default/call-for-papers
    ```
 
-3. **Configure Envoy proxy:**
+   Required settings:
+   - `DATABASE_URL`: PostgreSQL connection string
+   - `JWT_SECRET`: Random secret key (generate with `openssl rand -base64 64`)
+
+3. **Start the Service:**
    ```bash
+   sudo systemctl enable call-for-papers
+   sudo systemctl start call-for-papers
+   sudo systemctl status call-for-papers
+   ```
+
+4. **Verify Installation:**
+   ```bash
+   # Check logs
+   sudo journalctl -u call-for-papers -f
+
+   # Test health endpoint
+   curl http://localhost:8080/api/health
+   ```
+
+5. **Setup Reverse Proxy (Production):**
+
+   For production, set up a reverse proxy (Nginx, Apache, or Envoy) with SSL:
+
+   ```bash
+   # Example with Envoy (Docker-based)
    # Edit envoy.yaml and update the domain name
    nano /opt/call-for-papers/scripts/envoy.yaml
-   # Change cfp.example.com to your actual domain
-   ```
 
-   **Note:** Envoy runs as a Docker container and is automatically started with the production stack. No separate installation needed!
-
-4. **Setup SSL:**
-   ```bash
+   # Setup SSL certificates
    sudo ./scripts/setup-ssl.sh cfp.example.com
    ```
 
 ### Updates
 
-To update to a new version:
+#### Updating Debian/Ubuntu Package
+
+```bash
+# Download and run the installer again with the new version
+wget https://raw.githubusercontent.com/TXLF/call-for-papers/main/scripts/install-deb.sh
+sudo bash install-deb.sh v0.2.0
+
+# Or let it auto-detect the latest
+sudo bash install-deb.sh latest
+
+# Restart the service
+sudo systemctl restart call-for-papers
+```
+
+#### Updating Binary Installation
+
+```bash
+# Download and run the binary installer again
+wget https://raw.githubusercontent.com/TXLF/call-for-papers/main/scripts/install-binary.sh
+sudo bash install-binary.sh v0.2.0
+
+# Restart the service
+sudo systemctl restart call-for-papers
+```
+
+#### Updating Docker Compose Deployment
 
 ```bash
 cd /opt/call-for-papers

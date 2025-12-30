@@ -48,3 +48,24 @@ handlebars = "5.1"
 tokio-test = "0.4"
 mockall = "0.12"
 wiremock = "0.6"
+
+[package.metadata.deb]
+maintainer = "TXLF Contributors <noreply@texaslinuxfest.org>"
+copyright = "2025, TXLF Contributors"
+license-file = ["LICENSE", "4"]
+extended-description = """\
+An open source call for papers management system designed for open source \
+conferences. Built with Rust and Yew.rs, this self-hostable solution provides \
+a complete workflow from talk submission to conference scheduling."""
+depends = "$auto, postgresql-client"
+section = "web"
+priority = "optional"
+assets = [
+    ["target/release/call-for-papers", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/call-for-papers/", "644"],
+    ["config.example.toml", "etc/call-for-papers/", "644"],
+    ["scripts/call-for-papers.service", "lib/systemd/system/", "644"],
+]
+conf-files = ["/etc/call-for-papers/config.example.toml"]
+maintainer-scripts = "debian/"
+systemd-units = { enable = false }

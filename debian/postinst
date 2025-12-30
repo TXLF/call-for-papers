@@ -1,0 +1,53 @@
+#!/bin/sh
+set -e
+
+# Create system user for call-for-papers if it doesn't exist
+if ! getent passwd call-for-papers >/dev/null; then
+    useradd --system --home-dir /var/lib/call-for-papers \
+            --shell /usr/sbin/nologin \
+            --comment "Call for Papers Service User" \
+            call-for-papers
+fi
+
+# Create necessary directories
+mkdir -p /var/lib/call-for-papers
+mkdir -p /var/log/call-for-papers
+mkdir -p /etc/call-for-papers
+
+# Set ownership and permissions
+chown -R call-for-papers:call-for-papers /var/lib/call-for-papers
+chown -R call-for-papers:call-for-papers /var/log/call-for-papers
+chmod 750 /var/lib/call-for-papers
+chmod 750 /var/log/call-for-papers
+chmod 755 /etc/call-for-papers
+
+# Copy example config if config doesn't exist
+if [ ! -f /etc/call-for-papers/config.toml ]; then
+    if [ -f /etc/call-for-papers/config.example.toml ]; then
+        echo "No config.toml found. Creating from example..."
+        echo "Please edit /etc/call-for-papers/config.toml with your settings."
+    fi
+fi
+
+# Reload systemd
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload >/dev/null || true
+fi
+
+echo ""
+echo "Call for Papers has been installed successfully!"
+echo ""
+echo "Next steps:"
+echo "  1. Configure PostgreSQL database"
+echo "  2. Edit /etc/call-for-papers/config.toml (or use environment variables)"
+echo "  3. Set DATABASE_URL and JWT_SECRET in /etc/default/call-for-papers"
+echo "  4. Enable and start the service:"
+echo "     sudo systemctl enable call-for-papers"
+echo "     sudo systemctl start call-for-papers"
+echo ""
+echo "Documentation: /usr/share/doc/call-for-papers/"
+echo ""
+
+#DEBHELPER#
+
+exit 0

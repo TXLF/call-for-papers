@@ -1,0 +1,35 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    purge)
+        # Remove user and data directories on purge
+        if getent passwd call-for-papers >/dev/null; then
+            userdel call-for-papers >/dev/null || true
+        fi
+
+        # Only remove data if explicitly purging
+        # (keeps data on regular uninstall)
+        rm -rf /var/lib/call-for-papers
+        rm -rf /var/log/call-for-papers
+        rm -rf /etc/call-for-papers
+        ;;
+
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        # Don't remove user or data on regular remove/upgrade
+        ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+# Reload systemd
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload >/dev/null || true
+fi
+
+#DEBHELPER#
+
+exit 0

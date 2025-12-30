@@ -95,6 +95,58 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_name }}.tar.gz
 
+  build-deb:
+    name: Build Debian Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Build release binary
+        env:
+          SQLX_OFFLINE: true
+        run: cargo build --release
+
+      - name: Build deb package
+        run: cargo deb --no-build
+
+      - name: Find deb package
+        id: find_deb
+        run: |
+          DEB_FILE=$(ls target/debian/*.deb | head -n1)
+          echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
+          echo "deb_name=$(basename $DEB_FILE)" >> $GITHUB_OUTPUT
+
+      - name: Upload deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-package
+          path: ${{ steps.find_deb.outputs.deb_file }}
+
   build-frontend:
     name: Build Frontend Release
     runs-on: ubuntu-latest
@@ -141,7 +193,7 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [build-release, build-frontend]
+    needs: [build-release, build-deb, build-frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -164,8 +216,29 @@ jobs:
 
           ### Installation
 
+          #### Debian/Ubuntu Package (Recommended)
+
+          ```bash
+          # Download the .deb package
+          wget https://github.com/TXLF/call-for-papers/releases/download/v${{ steps.version.outputs.version }}/call-for-papers_${{ steps.version.outputs.version }}_amd64.deb
+
+          # Install
+          sudo dpkg -i call-for-papers_*.deb
+          sudo apt-get install -f  # Install dependencies if needed
+
+          # Configure
+          sudo nano /etc/call-for-papers/config.toml
+
+          # Start the service
+          sudo systemctl enable call-for-papers
+          sudo systemctl start call-for-papers
+          ```
+
+          #### Binary Installation
+
           Download the appropriate binary for your platform:
 
+          - **Debian/Ubuntu Package**: `call-for-papers_${{ steps.version.outputs.version }}_amd64.deb`
           - **Linux (x86_64)**: `call-for-papers-linux-amd64.tar.gz`
           - **Linux (ARM64)**: `call-for-papers-linux-arm64.tar.gz`
           - **Linux (musl)**: `call-for-papers-linux-amd64-musl.tar.gz`
@@ -173,7 +246,7 @@ jobs:
           - **macOS (Apple Silicon)**: `call-for-papers-macos-arm64.tar.gz`
           - **Frontend**: `frontend-dist.tar.gz`
 
-          ### Quick Start
+          ### Quick Start (Binary)
 
           ```bash
           # Extract the binary
@@ -202,7 +275,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/**/*.tar.gz
+          files: |
+            artifacts/**/*.tar.gz
+            artifacts/**/*.deb
           body_path: release_notes.md
           draft: false
           prerelease: false
