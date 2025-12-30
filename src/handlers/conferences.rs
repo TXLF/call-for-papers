@@ -290,3 +290,18 @@ pub async fn delete_conference(
     tracing::info!("Conference deleted: {}", conference_id);
     Ok(StatusCode::NO_CONTENT)
 }
+
+/// Helper function to get active conference for internal use
+pub async fn get_active_conference_internal(db: &sqlx::PgPool) -> Result<Conference, String> {
+    sqlx::query_as::<_, Conference>(
+        r#"
+        SELECT * FROM conferences
+        WHERE is_active = true
+        ORDER BY start_date DESC
+        LIMIT 1
+        "#,
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| format!("No active conference found: {}", e))
+}

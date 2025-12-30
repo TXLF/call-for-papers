@@ -25,6 +25,11 @@ pub struct Config {
     pub linkedin_client_id: Option<String>,
     pub linkedin_client_secret: Option<String>,
     pub linkedin_redirect_url: Option<String>,
+    pub smtp_host: Option<String>,
+    pub smtp_port: Option<u16>,
+    pub smtp_user: Option<String>,
+    pub smtp_password: Option<String>,
+    pub smtp_from: Option<String>,
 }
 
 impl Config {
@@ -75,6 +80,14 @@ impl Config {
         let linkedin_client_secret = std::env::var("LINKEDIN_CLIENT_SECRET").ok();
         let linkedin_redirect_url = std::env::var("LINKEDIN_REDIRECT_URL").ok();
 
+        let smtp_host = std::env::var("SMTP_HOST").ok();
+        let smtp_port = std::env::var("SMTP_PORT")
+            .ok()
+            .and_then(|p| p.parse::<u16>().ok());
+        let smtp_user = std::env::var("SMTP_USER").ok();
+        let smtp_password = std::env::var("SMTP_PASSWORD").ok();
+        let smtp_from = std::env::var("SMTP_FROM").ok();
+
         Ok(Config {
             database_url,
             server_host,
@@ -99,6 +112,11 @@ impl Config {
             linkedin_client_id,
             linkedin_client_secret,
             linkedin_redirect_url,
+            smtp_host,
+            smtp_port,
+            smtp_user,
+            smtp_password,
+            smtp_from,
         })
     }
 }

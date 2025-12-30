@@ -9,17 +9,23 @@ use axum::{
 use sqlx::PgPool;
 use tower_http::services::{ServeDir, ServeFile};
 
-use crate::{config::Config, handlers};
+use crate::{config::Config, handlers, services::EmailService};
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
     pub config: Config,
+    pub email_service: EmailService,
 }
 
 pub fn create_router(db: PgPool, config: Config) -> Router {
     let upload_dir = config.upload_dir.clone();
-    let state = AppState { db, config };
+    let email_service = EmailService::new(config.clone(), db.clone());
+    let state = AppState {
+        db,
+        config,
+        email_service,
+    };
 
     // Protected routes (require authentication)
     let protected_routes = Router::new()

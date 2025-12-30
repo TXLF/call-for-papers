@@ -687,6 +687,64 @@ pub async fn change_talk_state(
         payload.reason.as_ref().map(|r| format!(" (reason: {})", r)).unwrap_or_default()
     );
 
+    // Send email notification to speaker about state change
+    if state.email_service.is_configured() {
+        // Fetch speaker info
+        let speaker_result: Result<(String, String), sqlx::Error> = sqlx::query_as(
+            r#"
+            SELECT full_name, email FROM users
+            WHERE id = $1
+            "#,
+        )
+        .bind(updated_talk.speaker_id)
+        .fetch_one(&state.db)
+        .await;
+
+        if let Ok((speaker_name, speaker_email)) = speaker_result {
+            // Determine template type based on new state
+            let template_type = match payload.new_state {
+                TalkState::Pending => "talk_pending",
+                TalkState::Accepted => "talk_accepted",
+                TalkState::Rejected => "talk_rejected",
+                _ => "", // No email for other states
+            };
+
+            if !template_type.is_empty() {
+                // Get conference_id from talk (we'll need to add this to Talk struct or fetch separately)
+                // For now, use a default/active conference
+                if let Ok(conf) = crate::handlers::conferences::get_active_conference_internal(&state.db).await {
+                    let variables = crate::services::email::EmailVariables {
+                        speaker_name,
+                        speaker_email: speaker_email.clone(),
+                        talk_title: updated_talk.title.clone(),
+                        talk_id: updated_talk.id.to_string(),
+                        reason: payload.reason.clone(),
+                        schedule_date: None,
+                        schedule_time: None,
+                        track_name: None,
+                    };
+
+                    // Send email asynchronously (don't block on errors)
+                    let email_result = state
+                        .email_service
+                        .send_templated_email(
+                            conf.id,
+                            template_type,
+                            &speaker_email,
+                            variables,
+                            Some(updated_talk.id),
+                            None, // No specific sender (system-generated)
+                        )
+                        .await;
+
+                    if let Err(e) = email_result {
+                        tracing::warn!("Failed to send email notification: {}", e);
+                    }
+                }
+            }
+        }
+    }
+
     Ok(Json(TalkResponse::from(updated_talk)))
 }
 
