@@ -233,6 +233,10 @@ pub fn signup() -> Html {
                     <span>{ "Continue with Google" }</span>
                 </a>
 
+                <a href="/api/auth/github" class="oauth-button github-button">
+                    <span>{ "Continue with GitHub" }</span>
+                </a>
+
                 <p class="auth-link">
                     { "Already have an account? " }
                     <Link<Route> to={Route::Login}>{ "Login" }</Link<Route>>

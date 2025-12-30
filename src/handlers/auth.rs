@@ -22,7 +22,7 @@ use uuid::Uuid;
 use crate::{
     api::AppState,
     models::{
-        auth::{AuthProviderType, ErrorResponse, GoogleUserInfo, OAuthCallbackQuery},
+        auth::{AuthProviderType, ErrorResponse, GoogleUserInfo, GitHubUserInfo, GitHubEmail, OAuthCallbackQuery},
         user::UserResponse,
         AuthResponse, Claims, LoginRequest, RegisterRequest, User
     },
@@ -547,6 +547,359 @@ pub async fn google_callback(
                 "email": google_user.email,
                 "name": google_user.name,
                 "picture": google_user.picture,
+            }))
+            .execute(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to create auth provider")),
+                )
+            })?;
+
+            new_user
+        }
+    };
+
+    // Create session token
+    let token = create_session_token(&state.db, &user, &state.config)
+        .await
+        .map_err(|e| {
+            tracing::error!("Token creation error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to create session")),
+            )
+        })?;
+
+    // Redirect to frontend with token
+    let redirect_url = format!("/auth/callback?token={}", token);
+    Ok(Redirect::to(&redirect_url))
+}
+
+// GitHub OAuth handlers
+
+fn get_github_oauth_client(
+    client_id: &str,
+    client_secret: &str,
+    redirect_url: &str,
+) -> Result<BasicClient, anyhow::Error> {
+    let github_client_id = ClientId::new(client_id.to_string());
+    let github_client_secret = ClientSecret::new(client_secret.to_string());
+    let auth_url = AuthUrl::new("https://github.com/login/oauth/authorize".to_string())?;
+    let token_url = TokenUrl::new("https://github.com/login/oauth/access_token".to_string())?;
+
+    Ok(BasicClient::new(
+        github_client_id,
+        Some(github_client_secret),
+        auth_url,
+        Some(token_url),
+    )
+    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
+}
+
+pub async fn github_authorize(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    // Check if GitHub OAuth is configured
+    let client_id = state
+        .config
+        .github_client_id
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("GitHub OAuth is not configured")),
+            )
+        })?;
+
+    let client_secret = state
+        .config
+        .github_client_secret
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("GitHub OAuth is not configured")),
+            )
+        })?;
+
+    let redirect_url = state
+        .config
+        .github_redirect_url
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("GitHub OAuth is not configured")),
+            )
+        })?;
+
+    let client = get_github_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
+        tracing::error!("Failed to create OAuth client: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("OAuth configuration error")),
+        )
+    })?;
+
+    // Generate the authorization URL
+    let (authorize_url, _csrf_token) = client
+        .authorize_url(CsrfToken::new_random)
+        .add_scope(Scope::new("user:email".to_string()))
+        .url();
+
+    Ok(Redirect::to(authorize_url.as_str()))
+}
+
+pub async fn github_callback(
+    State(state): State<AppState>,
+    Query(query): Query<OAuthCallbackQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    // Check if GitHub OAuth is configured
+    let client_id = state
+        .config
+        .github_client_id
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("GitHub OAuth is not configured")),
+            )
+        })?;
+
+    let client_secret = state
+        .config
+        .github_client_secret
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("GitHub OAuth is not configured")),
+            )
+        })?;
+
+    let redirect_url = state
+        .config
+        .github_redirect_url
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("GitHub OAuth is not configured")),
+            )
+        })?;
+
+    let client = get_github_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
+        tracing::error!("Failed to create OAuth client: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("OAuth configuration error")),
+        )
+    })?;
+
+    // Exchange the code for an access token
+    let token_result = client
+        .exchange_code(AuthorizationCode::new(query.code))
+        .request_async(async_http_client)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to exchange code for token: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to authenticate with GitHub")),
+            )
+        })?;
+
+    let http_client = reqwest::Client::new();
+
+    // Get user info from GitHub
+    let user_info_url = "https://api.github.com/user";
+    let user_info_response = http_client
+        .get(user_info_url)
+        .bearer_auth(token_result.access_token().secret())
+        .header("User-Agent", "Call-For-Papers")
+        .send()
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch user info: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to fetch user info from GitHub")),
+            )
+        })?;
+
+    let github_user: GitHubUserInfo = user_info_response.json().await.map_err(|e| {
+        tracing::error!("Failed to parse user info: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Failed to parse user info from GitHub")),
+        )
+    })?;
+
+    // Get user's email if not provided in user info
+    let email = if let Some(email) = github_user.email {
+        email
+    } else {
+        // Fetch emails from GitHub API
+        let emails_url = "https://api.github.com/user/emails";
+        let emails_response = http_client
+            .get(emails_url)
+            .bearer_auth(token_result.access_token().secret())
+            .header("User-Agent", "Call-For-Papers")
+            .send()
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to fetch user emails: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to fetch user emails from GitHub")),
+                )
+            })?;
+
+        let github_emails: Vec<GitHubEmail> = emails_response.json().await.map_err(|e| {
+            tracing::error!("Failed to parse user emails: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to parse user emails from GitHub")),
+            )
+        })?;
+
+        // Find primary verified email, or first verified email, or any email
+        github_emails
+            .iter()
+            .find(|e| e.primary && e.verified)
+            .or_else(|| github_emails.iter().find(|e| e.verified))
+            .or_else(|| github_emails.first())
+            .map(|e| e.email.clone())
+            .ok_or_else(|| {
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorResponse::new("No email found in GitHub account")),
+                )
+            })?
+    };
+
+    // Check if user already exists with this GitHub account
+    let github_user_id_str = github_user.id.to_string();
+    let existing_provider: Option<(Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT user_id FROM auth_providers
+        WHERE provider = $1 AND provider_user_id = $2
+        "#,
+    )
+    .bind(AuthProviderType::Github)
+    .bind(&github_user_id_str)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Internal server error")),
+        )
+    })?;
+
+    let user = if let Some((user_id,)) = existing_provider {
+        // User exists, fetch the user
+        sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Internal server error")),
+                )
+            })?
+    } else {
+        // Check if user exists with this email (from local registration or other OAuth)
+        let existing_user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
+            .bind(&email)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Internal server error")),
+                )
+            })?;
+
+        if let Some(user) = existing_user {
+            // Link GitHub account to existing user
+            sqlx::query(
+                r#"
+                INSERT INTO auth_providers (user_id, provider, provider_user_id, provider_data)
+                VALUES ($1, $2, $3, $4)
+                "#,
+            )
+            .bind(user.id)
+            .bind(AuthProviderType::Github)
+            .bind(&github_user_id_str)
+            .bind(serde_json::json!({
+                "id": github_user.id,
+                "login": github_user.login,
+                "email": email,
+                "name": github_user.name,
+                "avatar_url": github_user.avatar_url,
+            }))
+            .execute(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to link GitHub account")),
+                )
+            })?;
+
+            user
+        } else {
+            // Create new user
+            let full_name = github_user.name.as_ref()
+                .unwrap_or(&github_user.login)
+                .clone();
+
+            let new_user = sqlx::query_as::<_, User>(
+                r#"
+                INSERT INTO users (email, username, full_name, password_hash, is_organizer)
+                VALUES ($1, $2, $3, NULL, $4)
+                RETURNING *
+                "#,
+            )
+            .bind(&email)
+            .bind(&github_user.login)
+            .bind(&full_name)
+            .bind(false)
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to create user")),
+                )
+            })?;
+
+            // Create auth provider record
+            sqlx::query(
+                r#"
+                INSERT INTO auth_providers (user_id, provider, provider_user_id, provider_data)
+                VALUES ($1, $2, $3, $4)
+                "#,
+            )
+            .bind(new_user.id)
+            .bind(AuthProviderType::Github)
+            .bind(&github_user_id_str)
+            .bind(serde_json::json!({
+                "id": github_user.id,
+                "login": github_user.login,
+                "email": email,
+                "name": github_user.name,
+                "avatar_url": github_user.avatar_url,
             }))
             .execute(&state.db)
             .await

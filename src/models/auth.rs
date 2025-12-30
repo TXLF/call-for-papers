@@ -30,6 +30,22 @@ pub struct GoogleUserInfo {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct GitHubUserInfo {
+    pub id: i64,  // GitHub user ID
+    pub login: String,  // GitHub username
+    pub email: Option<String>,  // May be null if private
+    pub name: Option<String>,  // Display name
+    pub avatar_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GitHubEmail {
+    pub email: String,
+    pub primary: bool,
+    pub verified: bool,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct OAuthCallbackQuery {
     pub code: String,
     pub state: Option<String>,

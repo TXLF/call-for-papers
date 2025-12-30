@@ -275,6 +275,17 @@ input:focus, textarea:focus, select:focus {
     border-color: #4285f4;
 }
 
+.github-button {
+    border-color: #24292e;
+    color: #24292e;
+    margin-top: 0.75rem;
+}
+
+.github-button:hover {
+    background: #f6f8fa;
+    border-color: #24292e;
+}
+
 /* Talk Cards */
 .talks-container {
     max-width: 1000px;

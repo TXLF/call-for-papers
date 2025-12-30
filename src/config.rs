@@ -11,6 +11,9 @@ pub struct Config {
     pub google_client_id: Option<String>,
     pub google_client_secret: Option<String>,
     pub google_redirect_url: Option<String>,
+    pub github_client_id: Option<String>,
+    pub github_client_secret: Option<String>,
+    pub github_redirect_url: Option<String>,
 }
 
 impl Config {
@@ -43,6 +46,10 @@ impl Config {
         let google_client_secret = std::env::var("GOOGLE_CLIENT_SECRET").ok();
         let google_redirect_url = std::env::var("GOOGLE_REDIRECT_URL").ok();
 
+        let github_client_id = std::env::var("GITHUB_CLIENT_ID").ok();
+        let github_client_secret = std::env::var("GITHUB_CLIENT_SECRET").ok();
+        let github_redirect_url = std::env::var("GITHUB_REDIRECT_URL").ok();
+
         Ok(Config {
             database_url,
             server_host,
@@ -53,6 +60,9 @@ impl Config {
             google_client_id,
             google_client_secret,
             google_redirect_url,
+            github_client_id,
+            github_client_secret,
+            github_redirect_url,
         })
     }
 }
