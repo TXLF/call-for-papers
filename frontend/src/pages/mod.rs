@@ -17,3 +17,4 @@ pub mod schedule_builder;
 pub mod public_schedule;
 pub mod manage_email_templates;
 pub mod bulk_email;
+pub mod export_talks;

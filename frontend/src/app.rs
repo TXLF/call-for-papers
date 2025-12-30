@@ -11,6 +11,7 @@ use crate::pages::{
     manage_schedule_slots::ManageScheduleSlots, assign_talks::AssignTalks,
     schedule_builder::ScheduleBuilder, public_schedule::PublicSchedule,
     manage_email_templates::ManageEmailTemplates, bulk_email::BulkEmail,
+    export_talks::ExportTalks,
 };
 use crate::services::auth::AuthService;
 
@@ -52,6 +53,8 @@ pub enum Route {
     ManageEmailTemplates,
     #[at("/organizer/bulk-email")]
     BulkEmail,
+    #[at("/organizer/export")]
+    ExportTalks,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -129,6 +132,11 @@ fn switch(routes: Route) -> Html {
                 <BulkEmail />
             </OrganizerRoute>
         },
+        Route::ExportTalks => html! {
+            <OrganizerRoute>
+                <ExportTalks />
+            </OrganizerRoute>
+        },
         Route::NotFound => html! { <NotFound /> },
     }
 }
@@ -185,6 +193,7 @@ fn app_content() -> Html {
                                 <Link<Route> to={Route::RatingsDashboard}>{ "Ratings Dashboard" }</Link<Route>>
                                 <Link<Route> to={Route::ManageEmailTemplates}>{ "Email Templates" }</Link<Route>>
                                 <Link<Route> to={Route::BulkEmail}>{ "Bulk Email" }</Link<Route>>
+                                <Link<Route> to={Route::ExportTalks}>{ "Export Talks" }</Link<Route>>
                             }
                             <button onclick={on_logout} class="logout-button">{ "Logout" }</button>
                         </>

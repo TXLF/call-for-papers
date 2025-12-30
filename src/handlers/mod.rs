@@ -8,6 +8,7 @@ pub mod schedule_slots;
 pub mod conferences;
 pub mod email_templates;
 pub mod bulk_email;
+pub mod export;
 
 pub use auth::{login, register, google_authorize, google_callback, github_authorize, github_callback, apple_authorize, apple_callback, facebook_authorize, facebook_callback, linkedin_authorize, linkedin_callback};
 pub use talks::{create_talk, delete_talk, get_my_talks, get_talk, update_talk, upload_slides, respond_to_talk, list_all_talks, change_talk_state};
@@ -19,3 +20,4 @@ pub use schedule_slots::{list_schedule_slots, get_schedule_slot, create_schedule
 pub use conferences::{list_conferences, get_conference, get_active_conference, create_conference, update_conference, delete_conference};
 pub use email_templates::{list_email_templates, get_email_template, create_email_template, update_email_template, delete_email_template};
 pub use bulk_email::send_bulk_email;
+pub use export::export_talks;
