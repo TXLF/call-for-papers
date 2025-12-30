@@ -22,7 +22,7 @@ use uuid::Uuid;
 use crate::{
     api::AppState,
     models::{
-        auth::{AuthProviderType, ErrorResponse, GoogleUserInfo, GitHubUserInfo, GitHubEmail, OAuthCallbackQuery},
+        auth::{AuthProviderType, ErrorResponse, GoogleUserInfo, GitHubUserInfo, GitHubEmail, AppleUserData, OAuthCallbackQuery},
         user::UserResponse,
         AuthResponse, Claims, LoginRequest, RegisterRequest, User
     },
@@ -900,6 +900,306 @@ pub async fn github_callback(
                 "email": email,
                 "name": github_user.name,
                 "avatar_url": github_user.avatar_url,
+            }))
+            .execute(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to create auth provider")),
+                )
+            })?;
+
+            new_user
+        }
+    };
+
+    // Create session token
+    let token = create_session_token(&state.db, &user, &state.config)
+        .await
+        .map_err(|e| {
+            tracing::error!("Token creation error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to create session")),
+            )
+        })?;
+
+    // Redirect to frontend with token
+    let redirect_url = format!("/auth/callback?token={}", token);
+    Ok(Redirect::to(&redirect_url))
+}
+
+// Apple OAuth handlers
+
+fn get_apple_oauth_client(
+    client_id: &str,
+    client_secret: &str,
+    redirect_url: &str,
+) -> Result<BasicClient, anyhow::Error> {
+    let apple_client_id = ClientId::new(client_id.to_string());
+    let apple_client_secret = ClientSecret::new(client_secret.to_string());
+    let auth_url = AuthUrl::new("https://appleid.apple.com/auth/authorize".to_string())?;
+    let token_url = TokenUrl::new("https://appleid.apple.com/auth/token".to_string())?;
+
+    Ok(BasicClient::new(
+        apple_client_id,
+        Some(apple_client_secret),
+        auth_url,
+        Some(token_url),
+    )
+    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
+}
+
+pub async fn apple_authorize(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    // Check if Apple OAuth is configured
+    let client_id = state
+        .config
+        .apple_client_id
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Apple OAuth is not configured")),
+            )
+        })?;
+
+    let client_secret = state
+        .config
+        .apple_private_key
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Apple OAuth is not configured")),
+            )
+        })?;
+
+    let redirect_url = state
+        .config
+        .apple_redirect_url
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Apple OAuth is not configured")),
+            )
+        })?;
+
+    let client = get_apple_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
+        tracing::error!("Failed to create OAuth client: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("OAuth configuration error")),
+        )
+    })?;
+
+    // Generate the authorization URL
+    let (authorize_url, _csrf_token) = client
+        .authorize_url(CsrfToken::new_random)
+        .add_scope(Scope::new("name".to_string()))
+        .add_scope(Scope::new("email".to_string()))
+        .url();
+
+    Ok(Redirect::to(authorize_url.as_str()))
+}
+
+pub async fn apple_callback(
+    State(state): State<AppState>,
+    Query(query): Query<OAuthCallbackQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    // Check if Apple OAuth is configured
+    let client_id = state
+        .config
+        .apple_client_id
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Apple OAuth is not configured")),
+            )
+        })?;
+
+    let client_secret = state
+        .config
+        .apple_private_key
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Apple OAuth is not configured")),
+            )
+        })?;
+
+    let redirect_url = state
+        .config
+        .apple_redirect_url
+        .as_ref()
+        .ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse::new("Apple OAuth is not configured")),
+            )
+        })?;
+
+    let client = get_apple_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
+        tracing::error!("Failed to create OAuth client: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("OAuth configuration error")),
+        )
+    })?;
+
+    // Exchange the code for an access token
+    let _token_result = client
+        .exchange_code(AuthorizationCode::new(query.code.clone()))
+        .request_async(async_http_client)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to exchange code for token: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to authenticate with Apple")),
+            )
+        })?;
+
+    // Parse user data if provided (first-time login)
+    let user_data: Option<AppleUserData> = query.user.as_ref().and_then(|u| {
+        serde_json::from_str(u).ok()
+    });
+
+    // Get email from user data - Apple only sends this on first authorization
+    let email = user_data.as_ref()
+        .and_then(|d| d.email.clone())
+        .ok_or_else(|| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::new("Email required for first-time Apple sign-in. Please try again.")),
+            )
+        })?;
+
+    // Generate a unique identifier for this Apple user
+    // Since we don't have access to the sub claim easily, use email as the identifier
+    let apple_user_id = email.clone();
+
+    // Check if user already exists with this Apple account
+    let existing_provider: Option<(Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT user_id FROM auth_providers
+        WHERE provider = $1 AND provider_user_id = $2
+        "#,
+    )
+    .bind(AuthProviderType::Apple)
+    .bind(&apple_user_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("Internal server error")),
+        )
+    })?;
+
+    let user = if let Some((user_id,)) = existing_provider {
+        // User exists, fetch the user
+        sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Internal server error")),
+                )
+            })?
+    } else {
+        // Check if user exists with this email (from local registration or other OAuth)
+        let existing_user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
+            .bind(&email)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Internal server error")),
+                )
+            })?;
+
+        if let Some(user) = existing_user {
+            // Link Apple account to existing user
+            sqlx::query(
+                r#"
+                INSERT INTO auth_providers (user_id, provider, provider_user_id, provider_data)
+                VALUES ($1, $2, $3, $4)
+                "#,
+            )
+            .bind(user.id)
+            .bind(AuthProviderType::Apple)
+            .bind(&apple_user_id)
+            .bind(serde_json::json!({
+                "email": email,
+            }))
+            .execute(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to link Apple account")),
+                )
+            })?;
+
+            user
+        } else {
+            // Create new user
+            let full_name = user_data.as_ref().and_then(|d| {
+                d.name.as_ref().map(|n| {
+                    format!(
+                        "{} {}",
+                        n.first_name.as_deref().unwrap_or(""),
+                        n.last_name.as_deref().unwrap_or("")
+                    ).trim().to_string()
+                })
+            }).unwrap_or_else(|| email.split('@').next().unwrap_or("User").to_string());
+
+            let new_user = sqlx::query_as::<_, User>(
+                r#"
+                INSERT INTO users (email, full_name, password_hash, is_organizer)
+                VALUES ($1, $2, NULL, $3)
+                RETURNING *
+                "#,
+            )
+            .bind(&email)
+            .bind(&full_name)
+            .bind(false)
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::new("Failed to create user")),
+                )
+            })?;
+
+            // Create auth provider record
+            sqlx::query(
+                r#"
+                INSERT INTO auth_providers (user_id, provider, provider_user_id, provider_data)
+                VALUES ($1, $2, $3, $4)
+                "#,
+            )
+            .bind(new_user.id)
+            .bind(AuthProviderType::Apple)
+            .bind(&apple_user_id)
+            .bind(serde_json::json!({
+                "email": email,
             }))
             .execute(&state.db)
             .await

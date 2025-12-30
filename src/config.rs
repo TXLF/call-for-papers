@@ -14,6 +14,11 @@ pub struct Config {
     pub github_client_id: Option<String>,
     pub github_client_secret: Option<String>,
     pub github_redirect_url: Option<String>,
+    pub apple_client_id: Option<String>,
+    pub apple_team_id: Option<String>,
+    pub apple_key_id: Option<String>,
+    pub apple_private_key: Option<String>,
+    pub apple_redirect_url: Option<String>,
 }
 
 impl Config {
@@ -50,6 +55,12 @@ impl Config {
         let github_client_secret = std::env::var("GITHUB_CLIENT_SECRET").ok();
         let github_redirect_url = std::env::var("GITHUB_REDIRECT_URL").ok();
 
+        let apple_client_id = std::env::var("APPLE_CLIENT_ID").ok();
+        let apple_team_id = std::env::var("APPLE_TEAM_ID").ok();
+        let apple_key_id = std::env::var("APPLE_KEY_ID").ok();
+        let apple_private_key = std::env::var("APPLE_PRIVATE_KEY").ok();
+        let apple_redirect_url = std::env::var("APPLE_REDIRECT_URL").ok();
+
         Ok(Config {
             database_url,
             server_host,
@@ -63,6 +74,11 @@ impl Config {
             github_client_id,
             github_client_secret,
             github_redirect_url,
+            apple_client_id,
+            apple_team_id,
+            apple_key_id,
+            apple_private_key,
+            apple_redirect_url,
         })
     }
 }

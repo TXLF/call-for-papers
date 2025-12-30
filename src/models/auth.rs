@@ -45,10 +45,37 @@ pub struct GitHubEmail {
     pub verified: bool,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AppleUserInfo {
+    pub sub: String,  // Apple user ID
+    pub email: Option<String>,
+    pub email_verified: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AppleTokenResponse {
+    pub id_token: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AppleUserData {
+    pub name: Option<AppleUserName>,
+    pub email: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AppleUserName {
+    #[serde(rename = "firstName")]
+    pub first_name: Option<String>,
+    #[serde(rename = "lastName")]
+    pub last_name: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct OAuthCallbackQuery {
     pub code: String,
     pub state: Option<String>,
+    pub user: Option<String>,  // Apple sends user data as JSON string on first auth
 }
 
 #[derive(Debug, Deserialize)]

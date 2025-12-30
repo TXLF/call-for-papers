@@ -286,6 +286,17 @@ input:focus, textarea:focus, select:focus {
     border-color: #24292e;
 }
 
+.apple-button {
+    border-color: #000000;
+    color: #000000;
+    margin-top: 0.75rem;
+}
+
+.apple-button:hover {
+    background: #f5f5f5;
+    border-color: #000000;
+}
+
 /* Talk Cards */
 .talks-container {
     max-width: 1000px;
