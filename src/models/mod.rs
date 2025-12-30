@@ -6,6 +6,7 @@ pub mod rating;
 pub mod track;
 pub mod schedule_slot;
 pub mod conference;
+pub mod email_template;
 
 pub use user::User;
 pub use auth::{RegisterRequest, LoginRequest, AuthResponse, Claims};
@@ -15,3 +16,4 @@ pub use rating::{Rating, CreateRatingRequest, UpdateRatingRequest, RatingRespons
 pub use track::{Track, TrackResponse, CreateTrackRequest, UpdateTrackRequest};
 pub use schedule_slot::{ScheduleSlot, ScheduleSlotResponse, CreateScheduleSlotRequest, UpdateScheduleSlotRequest, AssignTalkRequest, PublicScheduleSlot, PublicScheduleTalk};
 pub use conference::{Conference, ConferenceResponse, CreateConferenceRequest, UpdateConferenceRequest};
+pub use email_template::{EmailTemplate, EmailTemplateResponse, CreateEmailTemplateRequest, UpdateEmailTemplateRequest};
