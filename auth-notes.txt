@@ -1,0 +1,9 @@
+google oauth flow setup:
+
+  1. Create a Google OAuth application at https://console.cloud.google.com/apis/credentials
+  2. Set up authorized redirect URI: http://localhost:8080/api/auth/google/callback
+  3. Add the credentials to your .env file
+  4. Build and run the application
+  5. Test the OAuth flow
+
+
