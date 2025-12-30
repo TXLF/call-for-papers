@@ -17,17 +17,20 @@ pub struct AppState {
     pub config: Config,
     pub email_service: EmailService,
     pub claude_service: crate::services::ClaudeService,
+    pub openai_service: crate::services::OpenAIService,
 }
 
 pub fn create_router(db: PgPool, config: Config) -> Router {
     let upload_dir = config.upload_dir.clone();
     let email_service = EmailService::new(config.clone(), db.clone());
     let claude_service = crate::services::ClaudeService::new(&config);
+    let openai_service = crate::services::OpenAIService::new(&config);
     let state = AppState {
         db,
         config,
         email_service,
         claude_service,
+        openai_service,
     };
 
     // Protected routes (require authentication)

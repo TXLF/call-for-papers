@@ -14,6 +14,8 @@ use crate::{
 pub struct AutoTagQuery {
     /// Optional state filter for talks to analyze
     pub state: Option<String>,
+    /// AI provider to use: "claude" or "openai"
+    pub provider: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -27,13 +29,35 @@ pub async fn auto_tag_with_claude(
     State(state): State<AppState>,
     Query(params): Query<AutoTagQuery>,
 ) -> Result<Json<AutoTagResponse>, (StatusCode, String)> {
-    // Check if Claude API is configured
-    if !state.claude_service.is_configured() {
-        return Err((
-            StatusCode::SERVICE_UNAVAILABLE,
-            "Claude API is not configured. Please set CLAUDE_API_KEY environment variable."
-                .to_string(),
-        ));
+    // Determine which provider to use (default to Claude for backwards compatibility)
+    let provider = params.provider.as_deref().unwrap_or("claude");
+
+    // Check if the selected AI provider is configured
+    match provider {
+        "claude" => {
+            if !state.claude_service.is_configured() {
+                return Err((
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "Claude API is not configured. Please set CLAUDE_API_KEY environment variable."
+                        .to_string(),
+                ));
+            }
+        }
+        "openai" => {
+            if !state.openai_service.is_configured() {
+                return Err((
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "OpenAI API is not configured. Please set OPENAI_API_KEY environment variable."
+                        .to_string(),
+                ));
+            }
+        }
+        _ => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("Invalid provider: {}. Must be 'claude' or 'openai'", provider),
+            ));
+        }
     }
 
     // Build query to fetch talks (reuse logic from export handler)
@@ -96,12 +120,24 @@ pub async fn auto_tag_with_claude(
     let talks_json = serde_json::to_string_pretty(&talks)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to serialize talks: {}", e)))?;
 
-    // Call Claude API
-    let suggested_labels = state
-        .claude_service
-        .suggest_labels(&talks_json)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    // Call the appropriate AI API
+    let suggested_labels = match provider {
+        "claude" => {
+            state
+                .claude_service
+                .suggest_labels(&talks_json)
+                .await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
+        }
+        "openai" => {
+            state
+                .openai_service
+                .suggest_labels(&talks_json)
+                .await
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
+        }
+        _ => unreachable!(), // Already validated above
+    };
 
     // Fetch existing labels from database
     let existing_labels_db = sqlx::query_as::<_, Label>("SELECT * FROM labels WHERE is_ai_generated = false")

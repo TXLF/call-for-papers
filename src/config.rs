@@ -31,6 +31,7 @@ pub struct Config {
     pub smtp_password: Option<String>,
     pub smtp_from: Option<String>,
     pub claude_api_key: Option<String>,
+    pub openai_api_key: Option<String>,
 }
 
 impl Config {
@@ -90,6 +91,7 @@ impl Config {
         let smtp_from = std::env::var("SMTP_FROM").ok();
 
         let claude_api_key = std::env::var("CLAUDE_API_KEY").ok();
+        let openai_api_key = std::env::var("OPENAI_API_KEY").ok();
 
         Ok(Config {
             database_url,
@@ -121,6 +123,7 @@ impl Config {
             smtp_password,
             smtp_from,
             claude_api_key,
+            openai_api_key,
         })
     }
 }

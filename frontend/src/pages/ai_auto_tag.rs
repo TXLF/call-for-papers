@@ -29,6 +29,7 @@ pub fn ai_auto_tag() -> Html {
     let success = use_state(|| None::<String>);
     let suggestions = use_state(|| None::<AutoTagResponse>);
     let state_filter = use_state(|| String::from("all"));
+    let ai_provider = use_state(|| String::from("claude"));
     let selected_labels = use_state(|| Vec::<String>::new());
 
     let on_analyze = {
@@ -37,6 +38,7 @@ pub fn ai_auto_tag() -> Html {
         let success = success.clone();
         let suggestions = suggestions.clone();
         let state_filter = state_filter.clone();
+        let ai_provider = ai_provider.clone();
 
         Callback::from(move |e: MouseEvent| {
             e.prevent_default();
@@ -46,6 +48,7 @@ pub fn ai_auto_tag() -> Html {
             let success = success.clone();
             let suggestions = suggestions.clone();
             let state_filter_val = (*state_filter).clone();
+            let provider_val = (*ai_provider).clone();
 
             wasm_bindgen_futures::spawn_local(async move {
                 analyzing.set(true);
@@ -62,9 +65,9 @@ pub fn ai_auto_tag() -> Html {
                 };
 
                 let url = if state_filter_val == "all" {
-                    "/api/ai/auto-tag".to_string()
+                    format!("/api/ai/auto-tag?provider={}", provider_val)
                 } else {
-                    format!("/api/ai/auto-tag?state={}", state_filter_val)
+                    format!("/api/ai/auto-tag?state={}&provider={}", state_filter_val, provider_val)
                 };
 
                 match Request::get(&url)
@@ -77,7 +80,8 @@ pub fn ai_auto_tag() -> Html {
                             match response.json::<AutoTagResponse>().await {
                                 Ok(result) => {
                                     suggestions.set(Some(result));
-                                    success.set(Some("Analysis complete! Review the suggested labels below.".to_string()));
+                                    let provider_name = if provider_val == "claude" { "Claude" } else { "ChatGPT" };
+                                    success.set(Some(format!("Analysis complete using {}! Review the suggested labels below.", provider_name)));
                                 }
                                 Err(e) => {
                                     error.set(Some(format!("Failed to parse response: {}", e)));
@@ -197,15 +201,15 @@ pub fn ai_auto_tag() -> Html {
     html! {
         <div class="ai-auto-tag-container">
             <div class="page-header">
-                <h1>{ "AI Auto-Tagging with Claude" }</h1>
+                <h1>{ "AI Auto-Tagging" }</h1>
             </div>
 
             <div class="ai-info">
                 <p>
-                    { "Use Claude AI to analyze your talk submissions and suggest relevant labels for categorization. " }
-                    { "Claude will analyze talk titles, summaries, and descriptions to recommend appropriate tags." }
+                    { "Use AI to analyze your talk submissions and suggest relevant labels for categorization. " }
+                    { "The AI will analyze talk titles, summaries, and descriptions to recommend appropriate tags." }
                 </p>
-                <p><strong>{ "Note:" }</strong>{ " This feature requires a Claude API key to be configured." }</p>
+                <p><strong>{ "Note:" }</strong>{ " This feature requires either a Claude API key (CLAUDE_API_KEY) or OpenAI API key (OPENAI_API_KEY) to be configured." }</p>
             </div>
 
             if let Some(err) = (*error).as_ref() {
@@ -218,6 +222,24 @@ pub fn ai_auto_tag() -> Html {
 
             <div class="analyze-section">
                 <h2>{ "Step 1: Analyze Talks" }</h2>
+
+                <div class="form-group">
+                    <label>{ "AI Provider" }</label>
+                    <select
+                        value={(*ai_provider).clone()}
+                        onchange={Callback::from({
+                            let ai_provider = ai_provider.clone();
+                            move |e: Event| {
+                                let input: web_sys::HtmlSelectElement = e.target_unchecked_into();
+                                ai_provider.set(input.value());
+                            }
+                        })}
+                        disabled={*analyzing}
+                    >
+                        <option value="claude">{ "Claude (Anthropic)" }</option>
+                        <option value="openai">{ "ChatGPT (OpenAI)" }</option>
+                    </select>
+                </div>
 
                 <div class="form-group">
                     <label>{ "Filter by State" }</label>
@@ -244,7 +266,7 @@ pub fn ai_auto_tag() -> Html {
                     class="btn-primary"
                     disabled={*analyzing}
                 >
-                    { if *analyzing { "Analyzing with Claude..." } else { "Analyze Talks" } }
+                    { if *analyzing { "Analyzing with AI..." } else { "Analyze Talks" } }
                 </button>
             </div>
 
@@ -253,7 +275,7 @@ pub fn ai_auto_tag() -> Html {
                     <h2>{ "Step 2: Review Suggested Labels" }</h2>
 
                     <div class="label-summary">
-                        <p>{ format!("Claude suggested {} labels:", result.suggested_labels.len()) }</p>
+                        <p>{ format!("AI suggested {} labels:", result.suggested_labels.len()) }</p>
                         <ul>
                             <li>{ format!("{} already exist in your system", result.existing_labels.len()) }</li>
                             <li>{ format!("{} are new and can be created", result.new_labels.len()) }</li>
