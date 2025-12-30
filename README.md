@@ -109,6 +109,19 @@ cargo run
 
 For detailed setup instructions including database configuration, environment variables, and troubleshooting, see **[DEVELOPMENT.md](DEVELOPMENT.md)**.
 
+## Documentation
+
+### User Guides
+
+- **[Organizer Guide](docs/organizer-guide.md)** - Complete guide for conference organizers covering talk management, ratings, AI features, schedule building, and communication tools
+- **Speaker Guide** - Coming soon - Guide for speakers on submitting talks and responding to acceptances
+
+### Technical Documentation
+
+- **[Development Guide](DEVELOPMENT.md)** - Setup instructions, development workflow, and troubleshooting
+- **[Database Setup](DATABASE_SETUP.md)** - Database configuration and migration instructions
+- **[Configuration Reference](config.example.toml)** - All available configuration options
+
 ### Configuration
 
 Create a configuration file based on the provided template:
