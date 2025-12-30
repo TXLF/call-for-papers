@@ -1,6 +1,6 @@
 use yew::prelude::*;
 use crate::{
-    services::tracks::TrackService,
+    services::{tracks::TrackService, conferences::ConferenceService},
     types::{Track, CreateTrackRequest, UpdateTrackRequest},
 };
 
@@ -11,14 +11,16 @@ pub fn manage_tracks() -> Html {
     let error = use_state(|| None::<String>);
     let show_create_form = use_state(|| false);
     let _editing_track_id = use_state(|| None::<String>);
+    let conference_id = use_state(|| None::<String>);
 
     // Form state
     let name = use_state(|| String::new());
     let description = use_state(|| String::new());
     let capacity = use_state(|| String::new());
 
-    // Fetch tracks on mount
+    // Fetch active conference and tracks on mount
     {
+        let conference_id = conference_id.clone();
         let tracks = tracks.clone();
         let loading = loading.clone();
         let error = error.clone();
@@ -26,6 +28,20 @@ pub fn manage_tracks() -> Html {
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 loading.set(true);
+
+                // Fetch active conference
+                match ConferenceService::get_active_conference().await {
+                    Ok(conf) => {
+                        conference_id.set(Some(conf.id));
+                    }
+                    Err(e) => {
+                        error.set(Some(format!("Failed to load active conference: {}", e)));
+                        loading.set(false);
+                        return;
+                    }
+                }
+
+                // Fetch tracks
                 match TrackService::list_tracks().await {
                     Ok(data) => {
                         tracks.set(data);
@@ -44,6 +60,7 @@ pub fn manage_tracks() -> Html {
     // Create track handler
     let on_create = {
         let tracks = tracks.clone();
+        let conference_id = conference_id.clone();
         let name = name.clone();
         let description = description.clone();
         let capacity = capacity.clone();
@@ -53,6 +70,7 @@ pub fn manage_tracks() -> Html {
         Callback::from(move |e: SubmitEvent| {
             e.prevent_default();
             let tracks = tracks.clone();
+            let conf_id = (*conference_id).clone();
             let name_val = (*name).clone();
             let desc_val = if (*description).trim().is_empty() { None } else { Some((*description).clone()) };
             let cap_val = (*capacity).parse::<i32>().ok();
@@ -63,10 +81,16 @@ pub fn manage_tracks() -> Html {
             let capacity = capacity.clone();
 
             wasm_bindgen_futures::spawn_local(async move {
-                // Using dummy conference_id - in real impl, this would come from config or selection
-                let dummy_conf_id = "00000000-0000-0000-0000-000000000000".to_string();
+                let conf_id = match conf_id {
+                    Some(id) => id,
+                    None => {
+                        error.set(Some("No active conference found".to_string()));
+                        return;
+                    }
+                };
+
                 let request = CreateTrackRequest {
-                    conference_id: dummy_conf_id,
+                    conference_id: conf_id,
                     name: name_val,
                     description: desc_val,
                     capacity: cap_val,

@@ -5,6 +5,7 @@ pub mod ratings;
 pub mod dashboard;
 pub mod tracks;
 pub mod schedule_slots;
+pub mod conferences;
 
 pub use auth::{login, register, google_authorize, google_callback, github_authorize, github_callback, apple_authorize, apple_callback, facebook_authorize, facebook_callback, linkedin_authorize, linkedin_callback};
 pub use talks::{create_talk, delete_talk, get_my_talks, get_talk, update_talk, upload_slides, respond_to_talk, list_all_talks, change_talk_state};
@@ -13,3 +14,4 @@ pub use ratings::{create_or_update_rating, get_talk_ratings, delete_rating, get_
 pub use dashboard::get_dashboard_stats;
 pub use tracks::{list_tracks, get_track, create_track, update_track, delete_track};
 pub use schedule_slots::{list_schedule_slots, get_schedule_slot, create_schedule_slot, update_schedule_slot, delete_schedule_slot, assign_talk_to_slot, unassign_talk_from_slot};
+pub use conferences::{list_conferences, get_conference, get_active_conference, create_conference, update_conference, delete_conference};

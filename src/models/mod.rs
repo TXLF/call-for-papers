@@ -5,6 +5,7 @@ pub mod label;
 pub mod rating;
 pub mod track;
 pub mod schedule_slot;
+pub mod conference;
 
 pub use user::User;
 pub use auth::{RegisterRequest, LoginRequest, AuthResponse, Claims};
@@ -13,3 +14,4 @@ pub use label::{Label, LabelResponse, CreateLabelRequest, UpdateLabelRequest, Ad
 pub use rating::{Rating, CreateRatingRequest, UpdateRatingRequest, RatingResponse, TalkRatingStats, RatingsStatisticsResponse, RatingDistribution};
 pub use track::{Track, TrackResponse, CreateTrackRequest, UpdateTrackRequest};
 pub use schedule_slot::{ScheduleSlot, ScheduleSlotResponse, CreateScheduleSlotRequest, UpdateScheduleSlotRequest, AssignTalkRequest};
+pub use conference::{Conference, ConferenceResponse, CreateConferenceRequest, UpdateConferenceRequest};

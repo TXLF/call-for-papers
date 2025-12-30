@@ -205,6 +205,19 @@ pub struct RecentTalk {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Conference {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub start_date: String,
+    pub end_date: String,
+    pub location: Option<String>,
+    pub is_active: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Track {
     pub id: String,
     pub conference_id: String,

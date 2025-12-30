@@ -1,6 +1,6 @@
 use yew::prelude::*;
 use crate::{
-    services::{schedule_slots::ScheduleSlotService, tracks::TrackService},
+    services::{schedule_slots::ScheduleSlotService, tracks::TrackService, conferences::ConferenceService},
     types::{ScheduleSlot, Track, CreateScheduleSlotRequest},
 };
 
@@ -11,6 +11,7 @@ pub fn manage_schedule_slots() -> Html {
     let loading = use_state(|| true);
     let error = use_state(|| None::<String>);
     let show_create_form = use_state(|| false);
+    let conference_id = use_state(|| None::<String>);
 
     // Form state
     let track_id = use_state(|| String::new());
@@ -18,8 +19,9 @@ pub fn manage_schedule_slots() -> Html {
     let start_time = use_state(|| String::new());
     let end_time = use_state(|| String::new());
 
-    // Fetch slots and tracks on mount
+    // Fetch conference, slots and tracks on mount
     {
+        let conference_id = conference_id.clone();
         let slots = slots.clone();
         let tracks = tracks.clone();
         let loading = loading.clone();
@@ -28,6 +30,18 @@ pub fn manage_schedule_slots() -> Html {
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 loading.set(true);
+
+                // Fetch active conference first
+                match ConferenceService::get_active_conference().await {
+                    Ok(conf) => {
+                        conference_id.set(Some(conf.id));
+                    }
+                    Err(e) => {
+                        error.set(Some(format!("Failed to load active conference: {}", e)));
+                        loading.set(false);
+                        return;
+                    }
+                }
 
                 // Fetch both slots and tracks in parallel
                 let slots_result = ScheduleSlotService::list_schedule_slots().await;
@@ -52,6 +66,7 @@ pub fn manage_schedule_slots() -> Html {
     // Create slot handler
     let on_create = {
         let slots = slots.clone();
+        let conference_id = conference_id.clone();
         let track_id = track_id.clone();
         let slot_date = slot_date.clone();
         let start_time = start_time.clone();
@@ -62,6 +77,7 @@ pub fn manage_schedule_slots() -> Html {
         Callback::from(move |e: SubmitEvent| {
             e.prevent_default();
             let slots = slots.clone();
+            let conf_id = (*conference_id).clone();
             let track_id_val = (*track_id).clone();
             let date_val = (*slot_date).clone();
             let start_val = (*start_time).clone();
@@ -74,10 +90,16 @@ pub fn manage_schedule_slots() -> Html {
             let end_time = end_time.clone();
 
             wasm_bindgen_futures::spawn_local(async move {
-                // Using dummy conference_id - in real impl, this would come from config or selection
-                let dummy_conf_id = "00000000-0000-0000-0000-000000000000".to_string();
+                let conf_id = match conf_id {
+                    Some(id) => id,
+                    None => {
+                        error.set(Some("No active conference found".to_string()));
+                        return;
+                    }
+                };
+
                 let request = CreateScheduleSlotRequest {
-                    conference_id: dummy_conf_id,
+                    conference_id: conf_id,
                     track_id: track_id_val,
                     slot_date: date_val,
                     start_time: start_val,
