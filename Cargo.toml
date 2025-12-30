@@ -48,6 +48,8 @@ handlebars = "5.1"
 tokio-test = "0.4"
 mockall = "0.12"
 wiremock = "0.6"
+http-body-util = "0.1"
+tower = "0.4"
 
 [package.metadata.deb]
 maintainer = "TXLF Contributors <noreply@texaslinuxfest.org>"

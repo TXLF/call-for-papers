@@ -63,12 +63,26 @@ jobs:
           SQLX_OFFLINE: true
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-      - name: Run tests
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features postgres
+
+      - name: Run migrations
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
+        run: sqlx migrate run
+
+      - name: Run unit tests
+        env:
           SQLX_OFFLINE: true
           JWT_SECRET: test_jwt_secret_for_ci_pipeline_testing_only
-        run: cargo test --verbose
+        run: cargo test --lib --verbose
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
+          JWT_SECRET: test_jwt_secret_for_ci_pipeline_testing_only
+        run: cargo test --test '*' --verbose
 
   build-backend:
     name: Build Backend

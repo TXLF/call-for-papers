@@ -182,6 +182,7 @@ For detailed development setup including database configuration, environment var
 - **[API Documentation](docs/api.md)** - Complete REST API reference with examples and integration guides
 - **[Architecture Guide](docs/architecture.md)** - System architecture, design decisions, diagrams, and implementation patterns
 - **[Development Guide](DEVELOPMENT.md)** - Setup instructions, development workflow, and troubleshooting
+- **[Testing Guide](TESTING.md)** - Testing strategy, setup, and best practices
 - **[Database Setup](DATABASE_SETUP.md)** - Database configuration and migration instructions
 - **[Configuration Reference](config.example.toml)** - All available configuration options
 - **[Deployment Guide](scripts/README.md)** - Production deployment and operations
