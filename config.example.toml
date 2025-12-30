@@ -1,0 +1,177 @@
+# Call for Papers - Configuration File
+# This file supports customization for different conferences and organizations
+
+[conference]
+# Basic conference information
+name = "Texas Linux Fest"
+short_name = "TXLF"
+description = "The premier community-run conference for Linux and open source software in Texas"
+year = 2025
+website = "https://texaslinuxfest.org"
+
+# Conference dates
+submission_open = "2025-01-01T00:00:00Z"
+submission_close = "2025-06-01T23:59:59Z"
+conference_start = "2025-07-12"
+conference_end = "2025-07-13"
+
+# Location
+location = "Austin, Texas"
+venue = "Austin Convention Center"
+
+[branding]
+# Color scheme (hex colors)
+primary_color = "#1a73e8"
+secondary_color = "#34a853"
+accent_color = "#fbbc04"
+background_color = "#ffffff"
+text_color = "#202124"
+
+# Logo paths (relative to uploads directory or absolute URLs)
+logo_light = "/assets/logo-light.png"
+logo_dark = "/assets/logo-dark.png"
+favicon = "/assets/favicon.ico"
+
+# Custom CSS file (optional)
+custom_css = ""
+
+[features]
+# Feature flags to enable/disable functionality
+enable_speaker_registration = true
+enable_organizer_registration = false  # Usually invite-only
+enable_social_login = true
+enable_google_login = true
+enable_github_login = true
+enable_apple_login = false
+enable_facebook_login = false
+enable_linkedin_login = false
+enable_slide_upload = true
+enable_ratings = true
+enable_ai_tagging = true
+enable_schedule_builder = true
+require_speaker_confirmation = true  # Pending state before accepted
+
+[submission]
+# Submission requirements and limits
+min_title_length = 5
+max_title_length = 200
+min_summary_length = 50
+max_summary_length = 500
+max_description_length = 5000
+max_slide_size_mb = 50
+allowed_slide_formats = ["pdf", "ppt", "pptx", "odp"]
+
+# Talk duration options (in minutes)
+talk_durations = [20, 45, 60, 90]
+default_duration = 45
+
+[email]
+# Email configuration
+from_name = "Texas Linux Fest"
+from_email = "noreply@texaslinuxfest.org"
+reply_to = "info@texaslinuxfest.org"
+
+# Email template customization
+[email.templates]
+# Override default templates (optional)
+# Templates use Handlebars syntax
+submission_confirmation = """
+Hello {{speaker_name}},
+
+Thank you for submitting your talk "{{talk_title}}" to {{conference_name}} {{conference_year}}!
+
+We have received your submission and our organizing team will review it shortly.
+
+You can view and edit your submission at: {{submission_url}}
+
+Best regards,
+The {{conference_name}} Team
+"""
+
+acceptance_notification = """
+Hello {{speaker_name}},
+
+Congratulations! Your talk "{{talk_title}}" has been accepted for {{conference_name}} {{conference_year}}!
+
+Please confirm your attendance by {{confirmation_deadline}} at: {{confirmation_url}}
+
+Conference Details:
+- Dates: {{conference_dates}}
+- Location: {{conference_location}}
+
+We look forward to seeing you there!
+
+Best regards,
+The {{conference_name}} Team
+"""
+
+rejection_notification = """
+Hello {{speaker_name}},
+
+Thank you for submitting "{{talk_title}}" to {{conference_name}} {{conference_year}}.
+
+Unfortunately, due to the high volume of excellent submissions, we are unable to include your talk in this year's program.
+
+We encourage you to submit again next year!
+
+Best regards,
+The {{conference_name}} Team
+"""
+
+[labels]
+# Predefined labels/tags for categorization
+default_labels = [
+    "Linux",
+    "Open Source",
+    "DevOps",
+    "Security",
+    "Cloud",
+    "Containers",
+    "Networking",
+    "Embedded",
+    "Desktop",
+    "Server",
+    "Beginner",
+    "Intermediate",
+    "Advanced",
+    "Workshop",
+    "Tutorial",
+    "Case Study",
+]
+
+[schedule]
+# Schedule configuration
+enable_tracks = true
+track_names = ["Main Hall", "Workshop Room", "Technical Track"]
+
+# Default time slots (can be customized per day)
+slot_duration_minutes = 45
+break_duration_minutes = 15
+
+[database]
+# Database configuration (can be overridden by DATABASE_URL env var)
+# Leave empty to use environment variable
+url = ""
+max_connections = 10
+
+[server]
+# Server configuration (can be overridden by env vars)
+host = "0.0.0.0"
+port = 8080
+
+[security]
+# Security settings
+# JWT secret must be set via JWT_SECRET environment variable for security
+# Do not put secrets in this file!
+jwt_expiry_hours = 24
+session_timeout_hours = 168  # 1 week
+
+# Rate limiting
+enable_rate_limiting = true
+rate_limit_requests_per_minute = 60
+
+[uploads]
+# File upload configuration
+directory = "./uploads"
+max_size_mb = 50
+allowed_extensions = ["pdf", "ppt", "pptx", "odp", "jpg", "png"]

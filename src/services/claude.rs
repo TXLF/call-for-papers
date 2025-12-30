@@ -27,6 +27,7 @@ struct ClaudeContent {
     text: String,
 }
 
+#[derive(Clone)]
 pub struct ClaudeService {
     api_key: Option<String>,
     client: Client,

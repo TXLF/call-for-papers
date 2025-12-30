@@ -4,6 +4,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
+use sqlx::Row;
 use uuid::Uuid;
 
 use crate::{
@@ -162,7 +163,7 @@ pub async fn send_bulk_email(
                 &recipient.speaker_email,
                 &rendered_subject,
                 &rendered_body,
-                conference.id,
+                Some(conference.id),
                 Some(recipient.talk_id),
                 None,
             )

@@ -31,6 +31,7 @@ struct OpenAIMessageResponse {
     content: String,
 }
 
+#[derive(Clone)]
 pub struct OpenAIService {
     api_key: Option<String>,
     client: Client,

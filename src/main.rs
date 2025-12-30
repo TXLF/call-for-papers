@@ -13,7 +13,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     // Load configuration
-    let config = Config::from_env()?;
+    let config = Config::load()?;
 
     tracing::info!("Starting server...");
     tracing::info!("Configuration loaded: {:?}", config);
