@@ -53,6 +53,7 @@ tower = "0.5"
 fantoccini = "0.22"
 serde_json = "1.0"
 bcrypt = "0.17"
+serial_test = "3.2"
 
 [package.metadata.deb]
 maintainer = "TXLF Contributors <noreply@texaslinuxfest.org>"

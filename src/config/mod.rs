@@ -210,9 +210,11 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::env;
 
     #[test]
+    #[serial]
     fn test_load_default_config() {
         let result = Config::load_default_config();
         assert!(result.is_ok(), "Default config should load successfully");
@@ -225,6 +227,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_default_config_has_valid_toml() {
         let default_toml = include_str!("../../config.default.toml");
         let result: Result<FileConfig, _> = toml::from_str(default_toml);
@@ -232,6 +235,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_conference_config_defaults() {
         let config = Config::load_default_config().unwrap();
         assert_eq!(config.conference.year, 2025);
@@ -240,6 +244,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_branding_config_defaults() {
         let config = Config::load_default_config().unwrap();
         assert!(!config.branding.primary_color.is_empty());
@@ -248,6 +253,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_features_config_defaults() {
         let config = Config::load_default_config().unwrap();
         assert!(config.features.enable_speaker_registration);
@@ -256,6 +262,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_submission_config_defaults() {
         let config = Config::load_default_config().unwrap();
         assert_eq!(config.submission.min_title_length, 5);
@@ -267,6 +274,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_labels_config_defaults() {
         let config = Config::load_default_config().unwrap();
         assert!(!config.labels.default_labels.is_empty());
@@ -278,6 +286,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_security_config_defaults() {
         let config = Config::load_default_config().unwrap();
         assert_eq!(config.security.jwt_expiry_hours, 24);
@@ -286,6 +295,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_config_load_with_jwt_secret() {
         // Set JWT_SECRET for this test
         env::set_var("JWT_SECRET", "test_secret_key_for_testing");
@@ -302,6 +312,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     #[should_panic(expected = "JWT_SECRET must be set")]
     fn test_config_load_without_jwt_secret() {
         // Ensure JWT_SECRET is not set
@@ -312,6 +323,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_env_var_overrides() {
         env::set_var("JWT_SECRET", "test_secret");
         env::set_var("SERVER_HOST", "127.0.0.1");
@@ -332,6 +344,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_oauth_config_optional() {
         env::set_var("JWT_SECRET", "test_secret");
 
@@ -346,6 +359,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_ai_api_keys_optional() {
         env::set_var("JWT_SECRET", "test_secret");
 
