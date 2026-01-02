@@ -246,10 +246,11 @@ async fn test_organizer_rate_talk() {
         .expect("Failed to find rating form");
 
     // Select rating (assuming 1-5 scale with radio buttons or select)
-    ctx.click("input[value='5']")
-        .await
-        .or_else(|_| async { ctx.fill_input("#rating-score", "5").await })
-        .expect("Failed to select rating");
+    if ctx.click("input[value='5']").await.is_err() {
+        ctx.fill_input("#rating-score", "5")
+            .await
+            .expect("Failed to select rating");
+    }
 
     // Add notes
     ctx.fill_input("#rating-notes", "Excellent talk proposal!")
@@ -473,10 +474,11 @@ async fn test_organizer_change_talk_state() {
         .await
         .expect("Failed to find state selector");
 
-    ctx.click(".state-option[value='pending']")
-        .await
-        .or_else(|_| async { ctx.fill_input("#talk-state", "pending").await })
-        .expect("Failed to select pending state");
+    if ctx.click(".state-option[value='pending']").await.is_err() {
+        ctx.fill_input("#talk-state", "pending")
+            .await
+            .expect("Failed to select pending state");
+    }
 
     ctx.click(".save-state-button")
         .await
