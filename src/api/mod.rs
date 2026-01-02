@@ -96,7 +96,10 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         .route("/email-templates", get(handlers::list_email_templates))
         .route("/email-templates/{id}", get(handlers::get_email_template))
         .route("/email-templates", post(handlers::create_email_template))
-        .route("/email-templates/{id}", put(handlers::update_email_template))
+        .route(
+            "/email-templates/{id}",
+            put(handlers::update_email_template),
+        )
         .route(
             "/email-templates/{id}",
             delete(handlers::delete_email_template),
