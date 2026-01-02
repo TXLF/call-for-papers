@@ -292,7 +292,7 @@ async fn test_speaker_delete_talk() {
         .expect("Failed to click delete button");
 
     // Confirm deletion (if there's a confirmation dialog)
-    if let Ok(_) = ctx.find(".confirm-delete-button").await {
+    if (ctx.find(".confirm-delete-button").await).is_ok() {
         ctx.click(".confirm-delete-button")
             .await
             .expect("Failed to confirm deletion");

@@ -12,11 +12,12 @@ pub struct E2eContext {
 
 impl E2eContext {
     /// Create a new E2E test context with a running application
+    #[allow(clippy::zombie_processes)]
     pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
         // Start the application server
         println!("Starting application server...");
         let server_process = Command::new("cargo")
-            .args(&["run", "--release"])
+            .args(["run", "--release"])
             .env("DATABASE_URL", get_test_database_url())
             .env("JWT_SECRET", "test_jwt_secret_for_e2e_tests")
             .env("RUST_LOG", "info")
