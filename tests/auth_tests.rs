@@ -72,7 +72,7 @@ async fn test_register_duplicate_email() {
 
     let (status, response) = ctx.request(req).await;
 
-    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(status, StatusCode::CONFLICT);
     assert!(response["error"].is_string());
 
     ctx.cleanup().await;

@@ -42,6 +42,28 @@ impl TestContext {
             .await
             .expect("Failed to run migrations");
 
+        // Clean up any leftover data from previous failed tests
+        let tables = vec![
+            "talk_labels",
+            "ratings",
+            "schedule_slots",
+            "tracks",
+            "conferences",
+            "email_templates",
+            "labels",
+            "talks",
+            "auth_providers",
+            "sessions",
+            "users",
+        ];
+
+        for table in tables {
+            sqlx::query(&format!("TRUNCATE TABLE {} CASCADE", table))
+                .execute(&db)
+                .await
+                .ok();
+        }
+
         // Create router
         let app = create_router(db.clone(), config.clone());
 

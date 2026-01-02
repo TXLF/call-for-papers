@@ -51,7 +51,7 @@ use crate::{
 pub async fn register(
     State(state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<Json<AuthResponse>, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<ErrorResponse>)> {
     // Validate email format
     if !payload.email.contains('@') {
         return Err((
@@ -155,10 +155,13 @@ pub async fn register(
             )
         })?;
 
-    Ok(Json(AuthResponse {
-        token,
-        user: UserResponse::from(user),
-    }))
+    Ok((
+        StatusCode::CREATED,
+        Json(AuthResponse {
+            token,
+            user: UserResponse::from(user),
+        }),
+    ))
 }
 
 pub async fn login(
