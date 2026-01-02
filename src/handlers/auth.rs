@@ -48,39 +48,6 @@ use crate::{
     },
 };
 
-// Async HTTP client for OAuth2 token requests using reqwest
-async fn http_client(
-    request: oauth2::HttpRequest,
-) -> Result<oauth2::HttpResponse, Box<dyn std::error::Error + Send + Sync>> {
-    use http::header::{HeaderName, HeaderValue};
-
-    let client = reqwest::Client::new();
-    let method = request.method().clone();
-    let url = request.uri().to_string();
-    let headers = request.headers().clone();
-    let body = request.body().clone();
-
-    let mut request_builder = client.request(method, &url).body(body);
-
-    for (name, value) in headers.iter() {
-        request_builder = request_builder.header(name.as_str(), value.as_bytes());
-    }
-
-    let response = request_builder.send().await?;
-
-    let status_code = response.status();
-    let headers = response.headers().clone();
-    let body = response.bytes().await?.to_vec();
-
-    let mut http_response = http::Response::builder().status(status_code);
-
-    for (name, value) in headers.iter() {
-        http_response = http_response.header(name, value);
-    }
-
-    Ok(http_response.body(body)?)
-}
-
 pub async fn register(
     State(state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
@@ -441,6 +408,7 @@ pub async fn google_callback(
     })?;
 
     // Exchange the code for an access token
+    let http_client = reqwest::Client::new();
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code))
         .request_async(&http_client)
@@ -713,6 +681,7 @@ pub async fn github_callback(
     })?;
 
     // Exchange the code for an access token
+    let http_client = reqwest::Client::new();
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code))
         .request_async(&http_client)
@@ -1047,6 +1016,7 @@ pub async fn apple_callback(
     })?;
 
     // Exchange the code for an access token
+    let http_client = reqwest::Client::new();
     let _token_result = client
         .exchange_code(AuthorizationCode::new(query.code.clone()))
         .request_async(&http_client)
@@ -1341,6 +1311,7 @@ pub async fn facebook_callback(
         })?;
 
     // Exchange the code for an access token
+    let http_client = reqwest::Client::new();
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code))
         .request_async(&http_client)
@@ -1654,6 +1625,7 @@ pub async fn linkedin_callback(
     })?;
 
     // Exchange the code for an access token
+    let http_client = reqwest::Client::new();
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code.clone()))
         .request_async(&http_client)

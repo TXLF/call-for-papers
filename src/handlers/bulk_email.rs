@@ -104,7 +104,7 @@ pub async fn send_bulk_email(
         }
 
         // Prepare variables for template rendering
-        let mut variables = EmailVariables {
+        let variables = EmailVariables {
             speaker_name: recipient.speaker_name.clone(),
             speaker_email: recipient.speaker_email.clone(),
             talk_title: recipient.talk_title.clone(),
