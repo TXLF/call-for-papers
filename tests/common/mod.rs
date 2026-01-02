@@ -129,6 +129,7 @@ fn get_test_database_url() -> String {
 }
 
 /// Create a test user
+#[allow(dead_code)]
 pub async fn create_test_user(
     db: &PgPool,
     email: &str,
@@ -198,6 +199,7 @@ pub fn generate_test_token(user_id: uuid::Uuid, email: &str, is_organizer: bool)
 }
 
 /// Create a test label
+#[allow(dead_code)]
 pub async fn create_test_label(db: &PgPool, name: &str, color: &str) -> uuid::Uuid {
     sqlx::query_scalar::<_, uuid::Uuid>(
         r#"
@@ -214,6 +216,7 @@ pub async fn create_test_label(db: &PgPool, name: &str, color: &str) -> uuid::Uu
 }
 
 /// Create a test conference
+#[allow(dead_code)]
 pub async fn create_test_conference(db: &PgPool, name: &str) -> uuid::Uuid {
     sqlx::query_scalar::<_, uuid::Uuid>(
         r#"
@@ -229,6 +232,7 @@ pub async fn create_test_conference(db: &PgPool, name: &str) -> uuid::Uuid {
 }
 
 /// Create a test track
+#[allow(dead_code)]
 pub async fn create_test_track(db: &PgPool, conference_id: uuid::Uuid, name: &str) -> uuid::Uuid {
     sqlx::query_scalar::<_, uuid::Uuid>(
         r#"
@@ -245,6 +249,7 @@ pub async fn create_test_track(db: &PgPool, conference_id: uuid::Uuid, name: &st
 }
 
 /// Create a test talk
+#[allow(dead_code)]
 pub async fn create_test_talk(
     db: &PgPool,
     speaker_id: uuid::Uuid,
