@@ -35,9 +35,9 @@ toml = "0.9"
 
 # Authentication
 argon2 = { version = "0.5", features = ["std"] }
-jsonwebtoken = "10.2"
+jsonwebtoken = { version = "10.2", features = ["rust_crypto"] }
 rand = "0.9"
-oauth2 = "5.0"
+oauth2 = { version = "5.0", features = ["reqwest"] }
 reqwest = { version = "0.12", features = ["json"] }
 
 # Email

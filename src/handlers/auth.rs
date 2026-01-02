@@ -11,13 +11,27 @@ use axum::{
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use oauth2::basic::BasicClient;
-use oauth2::reqwest::async_http_client;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope,
     TokenResponse, TokenUrl,
 };
+use reqwest;
 use sqlx::PgPool;
 use uuid::Uuid;
+
+// Type alias for a configured OAuth client with auth and token endpoints set
+type ConfiguredOAuthClient = oauth2::Client<
+    oauth2::StandardErrorResponse<oauth2::basic::BasicErrorResponseType>,
+    oauth2::StandardTokenResponse<oauth2::EmptyExtraTokenFields, oauth2::basic::BasicTokenType>,
+    oauth2::StandardTokenIntrospectionResponse<oauth2::EmptyExtraTokenFields, oauth2::basic::BasicTokenType>,
+    oauth2::StandardRevocableToken,
+    oauth2::StandardErrorResponse<oauth2::RevocationErrorResponseType>,
+    oauth2::EndpointSet,
+    oauth2::EndpointNotSet,
+    oauth2::EndpointNotSet,
+    oauth2::EndpointNotSet,
+    oauth2::EndpointSet,
+>;
 
 use crate::{
     api::AppState,
@@ -30,6 +44,39 @@ use crate::{
         AuthResponse, Claims, LoginRequest, RegisterRequest, User,
     },
 };
+
+// Async HTTP client for OAuth2 token requests using reqwest
+async fn http_client(
+    request: oauth2::HttpRequest,
+) -> Result<oauth2::HttpResponse, Box<dyn std::error::Error + Send + Sync>> {
+    use http::header::{HeaderName, HeaderValue};
+
+    let client = reqwest::Client::new();
+    let method = request.method().clone();
+    let url = request.uri().to_string();
+    let headers = request.headers().clone();
+    let body = request.body().clone();
+
+    let mut request_builder = client.request(method, &url).body(body);
+
+    for (name, value) in headers.iter() {
+        request_builder = request_builder.header(name.as_str(), value.as_bytes());
+    }
+
+    let response = request_builder.send().await?;
+
+    let status_code = response.status();
+    let headers = response.headers().clone();
+    let body = response.bytes().await?.to_vec();
+
+    let mut http_response = http::Response::builder().status(status_code);
+
+    for (name, value) in headers.iter() {
+        http_response = http_response.header(name, value);
+    }
+
+    Ok(http_response.body(body)?)
+}
 
 pub async fn register(
     State(state): State<AppState>,
@@ -299,19 +346,17 @@ fn get_google_oauth_client(
     client_id: &str,
     client_secret: &str,
     redirect_url: &str,
-) -> Result<BasicClient, anyhow::Error> {
+) -> anyhow::Result<ConfiguredOAuthClient> {
     let google_client_id = ClientId::new(client_id.to_string());
     let google_client_secret = ClientSecret::new(client_secret.to_string());
     let auth_url = AuthUrl::new("https://accounts.google.com/o/oauth2/v2/auth".to_string())?;
     let token_url = TokenUrl::new("https://oauth2.googleapis.com/token".to_string())?;
 
-    Ok(BasicClient::new(
-        google_client_id,
-        Some(google_client_secret),
-        auth_url,
-        Some(token_url),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
+    Ok(BasicClient::new(google_client_id)
+        .set_client_secret(google_client_secret)
+        .set_auth_uri(auth_url)
+        .set_token_uri(token_url)
+        .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
 }
 
 pub async fn google_authorize(
@@ -395,7 +440,7 @@ pub async fn google_callback(
     // Exchange the code for an access token
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(async_http_client)
+        .request_async(http_client)
         .await
         .map_err(|e| {
             tracing::error!("Failed to exchange code for token: {}", e);
@@ -575,19 +620,17 @@ fn get_github_oauth_client(
     client_id: &str,
     client_secret: &str,
     redirect_url: &str,
-) -> Result<BasicClient, anyhow::Error> {
+) -> anyhow::Result<ConfiguredOAuthClient> {
     let github_client_id = ClientId::new(client_id.to_string());
     let github_client_secret = ClientSecret::new(client_secret.to_string());
     let auth_url = AuthUrl::new("https://github.com/login/oauth/authorize".to_string())?;
     let token_url = TokenUrl::new("https://github.com/login/oauth/access_token".to_string())?;
 
-    Ok(BasicClient::new(
-        github_client_id,
-        Some(github_client_secret),
-        auth_url,
-        Some(token_url),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
+    Ok(BasicClient::new(github_client_id)
+        .set_client_secret(github_client_secret)
+        .set_auth_uri(auth_url)
+        .set_token_uri(token_url)
+        .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
 }
 
 pub async fn github_authorize(
@@ -669,7 +712,7 @@ pub async fn github_callback(
     // Exchange the code for an access token
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(async_http_client)
+        .request_async(http_client)
         .await
         .map_err(|e| {
             tracing::error!("Failed to exchange code for token: {}", e);
@@ -910,19 +953,17 @@ fn get_apple_oauth_client(
     client_id: &str,
     client_secret: &str,
     redirect_url: &str,
-) -> Result<BasicClient, anyhow::Error> {
+) -> anyhow::Result<ConfiguredOAuthClient> {
     let apple_client_id = ClientId::new(client_id.to_string());
     let apple_client_secret = ClientSecret::new(client_secret.to_string());
     let auth_url = AuthUrl::new("https://appleid.apple.com/auth/authorize".to_string())?;
     let token_url = TokenUrl::new("https://appleid.apple.com/auth/token".to_string())?;
 
-    Ok(BasicClient::new(
-        apple_client_id,
-        Some(apple_client_secret),
-        auth_url,
-        Some(token_url),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
+    Ok(BasicClient::new(apple_client_id)
+        .set_client_secret(apple_client_secret)
+        .set_auth_uri(auth_url)
+        .set_token_uri(token_url)
+        .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
 }
 
 pub async fn apple_authorize(
@@ -1005,7 +1046,7 @@ pub async fn apple_callback(
     // Exchange the code for an access token
     let _token_result = client
         .exchange_code(AuthorizationCode::new(query.code.clone()))
-        .request_async(async_http_client)
+        .request_async(http_client)
         .await
         .map_err(|e| {
             tracing::error!("Failed to exchange code for token: {}", e);
@@ -1195,20 +1236,18 @@ fn get_facebook_oauth_client(
     client_id: &str,
     client_secret: &str,
     redirect_url: &str,
-) -> Result<BasicClient, anyhow::Error> {
+) -> anyhow::Result<ConfiguredOAuthClient> {
     let facebook_client_id = ClientId::new(client_id.to_string());
     let facebook_client_secret = ClientSecret::new(client_secret.to_string());
     let auth_url = AuthUrl::new("https://www.facebook.com/v18.0/dialog/oauth".to_string())?;
     let token_url =
         TokenUrl::new("https://graph.facebook.com/v18.0/oauth/access_token".to_string())?;
 
-    Ok(BasicClient::new(
-        facebook_client_id,
-        Some(facebook_client_secret),
-        auth_url,
-        Some(token_url),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
+    Ok(BasicClient::new(facebook_client_id)
+        .set_client_secret(facebook_client_secret)
+        .set_auth_uri(auth_url)
+        .set_token_uri(token_url)
+        .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?))
 }
 
 pub async fn facebook_authorize(
@@ -1301,7 +1340,7 @@ pub async fn facebook_callback(
     // Exchange the code for an access token
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(async_http_client)
+        .request_async(http_client)
         .await
         .map_err(|e| {
             tracing::error!("Failed to exchange code for token: {}", e);
@@ -1501,17 +1540,15 @@ fn get_linkedin_oauth_client(
     client_id: &str,
     client_secret: &str,
     redirect_url: &str,
-) -> Result<BasicClient, anyhow::Error> {
+) -> anyhow::Result<ConfiguredOAuthClient> {
     let auth_url = AuthUrl::new("https://www.linkedin.com/oauth/v2/authorization".to_string())?;
     let token_url = TokenUrl::new("https://www.linkedin.com/oauth/v2/accessToken".to_string())?;
 
-    let client = BasicClient::new(
-        ClientId::new(client_id.to_string()),
-        Some(ClientSecret::new(client_secret.to_string())),
-        auth_url,
-        Some(token_url),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?);
+    let client = BasicClient::new(ClientId::new(client_id.to_string()))
+        .set_client_secret(ClientSecret::new(client_secret.to_string()))
+        .set_auth_uri(auth_url)
+        .set_token_uri(token_url)
+        .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?);
 
     Ok(client)
 }
@@ -1616,7 +1653,7 @@ pub async fn linkedin_callback(
     // Exchange the code for an access token
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code.clone()))
-        .request_async(async_http_client)
+        .request_async(http_client)
         .await
         .map_err(|e| {
             (
