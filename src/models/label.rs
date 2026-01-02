@@ -27,7 +27,7 @@ pub struct UpdateLabelRequest {
     pub color: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LabelResponse {
     pub id: Uuid,
     pub name: String,
