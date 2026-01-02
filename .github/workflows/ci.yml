@@ -58,11 +58,6 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run clippy
-        env:
-          SQLX_OFFLINE: true
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
       - name: Install sqlx-cli
         run: cargo install sqlx-cli --no-default-features --features postgres
 
@@ -71,9 +66,14 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
         run: sqlx migrate run
 
+      - name: Run clippy
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
       - name: Run unit tests
         env:
-          SQLX_OFFLINE: true
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
           JWT_SECRET: test_jwt_secret_for_ci_pipeline_testing_only
         run: cargo test --lib --verbose
 
@@ -95,6 +95,21 @@ jobs:
   build-backend:
     name: Build Backend
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: call_for_papers_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v4
 
@@ -119,9 +134,17 @@ jobs:
           path: target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features postgres
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
+        run: sqlx migrate run
+
       - name: Build backend
         env:
-          SQLX_OFFLINE: true
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/call_for_papers_test
         run: cargo build --release --verbose
 
       - name: Upload backend artifact
