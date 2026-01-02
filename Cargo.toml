@@ -5,9 +5,9 @@ edition = "2021"
 
 [dependencies]
 # Web framework
-axum = { version = "0.7", features = ["multipart"] }
-tower = "0.4"
-tower-http = { version = "0.5", features = ["fs", "cors", "trace"] }
+axum = { version = "0.8", features = ["multipart"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "cors", "trace"] }
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }
@@ -21,7 +21,7 @@ sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-r
 
 # Error handling
 anyhow = "1.0"
-thiserror = "1.0"
+thiserror = "2.0"
 
 # Utilities
 chrono = { version = "0.4", features = ["serde"] }
@@ -31,28 +31,28 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Config
 dotenvy = "0.15"
-toml = "0.8"
+toml = "0.9"
 
 # Authentication
 argon2 = { version = "0.5", features = ["std"] }
-jsonwebtoken = "9.2"
-rand = "0.8"
-oauth2 = "4.4"
-reqwest = { version = "0.11", features = ["json"] }
+jsonwebtoken = "10.2"
+rand = "0.9"
+oauth2 = "5.0"
+reqwest = { version = "0.12", features = ["json"] }
 
 # Email
 lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder", "hostname"] }
-handlebars = "5.1"
+handlebars = "6.4"
 
 [dev-dependencies]
 tokio-test = "0.4"
-mockall = "0.12"
+mockall = "0.14"
 wiremock = "0.6"
 http-body-util = "0.1"
-tower = "0.4"
-fantoccini = "0.20"
+tower = "0.5"
+fantoccini = "0.22"
 serde_json = "1.0"
-bcrypt = "0.15"
+bcrypt = "0.17"
 
 [package.metadata.deb]
 maintainer = "TXLF Contributors <noreply@texaslinuxfest.org>"
