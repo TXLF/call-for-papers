@@ -99,7 +99,7 @@ impl Config {
             .unwrap_or(file_config.server.port);
 
         let jwt_secret =
-            std::env::var("JWT_SECRET").expect("JWT_SECRET must be set in environment variables");
+            std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
         let jwt_expiry_hours = std::env::var("JWT_EXPIRY_HOURS")
             .ok()
