@@ -38,16 +38,16 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         // Talk routes
         .route("/talks", post(handlers::create_talk))
         .route("/talks/mine", get(handlers::get_my_talks))
-        .route("/talks/:id", get(handlers::get_talk))
-        .route("/talks/:id", put(handlers::update_talk))
-        .route("/talks/:id", delete(handlers::delete_talk))
-        .route("/talks/:id/upload-slides", post(handlers::upload_slides))
-        .route("/talks/:id/respond", post(handlers::respond_to_talk))
+        .route("/talks/{id}", get(handlers::get_talk))
+        .route("/talks/{id}", put(handlers::update_talk))
+        .route("/talks/{id}", delete(handlers::delete_talk))
+        .route("/talks/{id}/upload-slides", post(handlers::upload_slides))
+        .route("/talks/{id}/respond", post(handlers::respond_to_talk))
         // Talk-label routes
-        .route("/talks/:id/labels", get(handlers::get_talk_labels))
-        .route("/talks/:id/labels", post(handlers::add_labels_to_talk))
+        .route("/talks/{id}/labels", get(handlers::get_talk_labels))
+        .route("/talks/{id}/labels", post(handlers::add_labels_to_talk))
         .route(
-            "/talks/:id/labels/:label_id",
+            "/talks/{id}/labels/{label_id}",
             delete(handlers::remove_label_from_talk),
         )
         .layer(axum_middleware::from_fn_with_state(
@@ -59,46 +59,46 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
     let organizer_routes = Router::new()
         .route("/dashboard/stats", get(handlers::get_dashboard_stats))
         .route("/talks", get(handlers::list_all_talks))
-        .route("/talks/:id/state", put(handlers::change_talk_state))
+        .route("/talks/{id}/state", put(handlers::change_talk_state))
         .route("/labels", post(handlers::create_label))
-        .route("/labels/:id", put(handlers::update_label))
-        .route("/labels/:id", delete(handlers::delete_label))
+        .route("/labels/{id}", put(handlers::update_label))
+        .route("/labels/{id}", delete(handlers::delete_label))
         // Rating routes
-        .route("/talks/:id/rate", post(handlers::create_or_update_rating))
-        .route("/talks/:id/ratings", get(handlers::get_talk_ratings))
-        .route("/talks/:id/rate/mine", get(handlers::get_my_rating))
-        .route("/talks/:id/rate", delete(handlers::delete_rating))
+        .route("/talks/{id}/rate", post(handlers::create_or_update_rating))
+        .route("/talks/{id}/ratings", get(handlers::get_talk_ratings))
+        .route("/talks/{id}/rate/mine", get(handlers::get_my_rating))
+        .route("/talks/{id}/rate", delete(handlers::delete_rating))
         .route("/ratings/statistics", get(handlers::get_ratings_statistics))
         // Conference routes (organizer only for CUD operations)
         .route("/conferences", post(handlers::create_conference))
-        .route("/conferences/:id", put(handlers::update_conference))
-        .route("/conferences/:id", delete(handlers::delete_conference))
+        .route("/conferences/{id}", put(handlers::update_conference))
+        .route("/conferences/{id}", delete(handlers::delete_conference))
         // Track routes (organizer only for CUD operations)
         .route("/tracks", post(handlers::create_track))
-        .route("/tracks/:id", put(handlers::update_track))
-        .route("/tracks/:id", delete(handlers::delete_track))
+        .route("/tracks/{id}", put(handlers::update_track))
+        .route("/tracks/{id}", delete(handlers::delete_track))
         // Schedule slot routes (organizer only for CUD operations)
         .route("/schedule-slots", post(handlers::create_schedule_slot))
-        .route("/schedule-slots/:id", put(handlers::update_schedule_slot))
+        .route("/schedule-slots/{id}", put(handlers::update_schedule_slot))
         .route(
-            "/schedule-slots/:id",
+            "/schedule-slots/{id}",
             delete(handlers::delete_schedule_slot),
         )
         .route(
-            "/schedule-slots/:id/assign",
+            "/schedule-slots/{id}/assign",
             put(handlers::assign_talk_to_slot),
         )
         .route(
-            "/schedule-slots/:id/assign",
+            "/schedule-slots/{id}/assign",
             delete(handlers::unassign_talk_from_slot),
         )
         // Email template routes (organizer only)
         .route("/email-templates", get(handlers::list_email_templates))
-        .route("/email-templates/:id", get(handlers::get_email_template))
+        .route("/email-templates/{id}", get(handlers::get_email_template))
         .route("/email-templates", post(handlers::create_email_template))
-        .route("/email-templates/:id", put(handlers::update_email_template))
+        .route("/email-templates/{id}", put(handlers::update_email_template))
         .route(
-            "/email-templates/:id",
+            "/email-templates/{id}",
             delete(handlers::delete_email_template),
         )
         // Bulk email route (organizer only)
@@ -139,13 +139,13 @@ pub fn create_router(db: PgPool, config: Config) -> Router {
         // Public conference routes (read-only)
         .route("/conferences", get(handlers::list_conferences))
         .route("/conferences/active", get(handlers::get_active_conference))
-        .route("/conferences/:id", get(handlers::get_conference))
+        .route("/conferences/{id}", get(handlers::get_conference))
         // Public track routes (read-only)
         .route("/tracks", get(handlers::list_tracks))
-        .route("/tracks/:id", get(handlers::get_track))
+        .route("/tracks/{id}", get(handlers::get_track))
         // Public schedule slot routes (read-only)
         .route("/schedule-slots", get(handlers::list_schedule_slots))
-        .route("/schedule-slots/:id", get(handlers::get_schedule_slot))
+        .route("/schedule-slots/{id}", get(handlers::get_schedule_slot))
         // Public schedule view (with talk details)
         .route("/schedule", get(handlers::get_public_schedule))
         .merge(protected_routes)
