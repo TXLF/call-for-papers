@@ -172,7 +172,7 @@ async fn test_get_talk_by_id() {
 
     let req = Request::builder()
         .method("GET")
-        .uri(&format!("/api/talks/{}", talk_id))
+        .uri(format!("/api/talks/{}", talk_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -207,7 +207,7 @@ async fn test_update_talk() {
 
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/talks/{}", talk_id))
+        .uri(format!("/api/talks/{}", talk_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -262,7 +262,7 @@ async fn test_update_talk_unauthorized() {
 
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/talks/{}", talk_id))
+        .uri(format!("/api/talks/{}", talk_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -301,7 +301,7 @@ async fn test_delete_talk() {
 
     let req = Request::builder()
         .method("DELETE")
-        .uri(&format!("/api/talks/{}", talk_id))
+        .uri(format!("/api/talks/{}", talk_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -313,7 +313,7 @@ async fn test_delete_talk() {
     // Verify talk is deleted
     let req = Request::builder()
         .method("GET")
-        .uri(&format!("/api/talks/{}", talk_id))
+        .uri(format!("/api/talks/{}", talk_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -446,7 +446,7 @@ async fn test_change_talk_state_as_organizer() {
     // Change state to pending
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/talks/{}/state", talk_id))
+        .uri(format!("/api/talks/{}/state", talk_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -487,7 +487,7 @@ async fn test_change_talk_state_requires_organizer() {
     // Try to change state as speaker (should fail)
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/talks/{}/state", talk_id))
+        .uri(format!("/api/talks/{}/state", talk_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -534,7 +534,7 @@ async fn test_respond_to_talk() {
     // Accept the talk
     let req = Request::builder()
         .method("POST")
-        .uri(&format!("/api/talks/{}/respond", talk_id))
+        .uri(format!("/api/talks/{}/respond", talk_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -582,7 +582,7 @@ async fn test_respond_to_talk_reject() {
     // Decline the talk
     let req = Request::builder()
         .method("POST")
-        .uri(&format!("/api/talks/{}/respond", talk_id))
+        .uri(format!("/api/talks/{}/respond", talk_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -623,7 +623,7 @@ async fn test_respond_to_talk_wrong_state() {
 
     let req = Request::builder()
         .method("POST")
-        .uri(&format!("/api/talks/{}/respond", talk_id))
+        .uri(format!("/api/talks/{}/respond", talk_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(

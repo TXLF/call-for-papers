@@ -144,7 +144,7 @@ async fn test_update_label_as_organizer() {
 
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/labels/{}", label_id))
+        .uri(format!("/api/labels/{}", label_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -185,7 +185,7 @@ async fn test_delete_label_as_organizer() {
 
     let req = Request::builder()
         .method("DELETE")
-        .uri(&format!("/api/labels/{}", label_id))
+        .uri(format!("/api/labels/{}", label_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -229,7 +229,7 @@ async fn test_add_label_to_talk() {
 
     let req = Request::builder()
         .method("POST")
-        .uri(&format!("/api/talks/{}/labels", talk_id))
+        .uri(format!("/api/talks/{}/labels", talk_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -287,7 +287,7 @@ async fn test_remove_label_from_talk() {
 
     let req = Request::builder()
         .method("DELETE")
-        .uri(&format!("/api/talks/{}/labels/{}", talk_id, label_id))
+        .uri(format!("/api/talks/{}/labels/{}", talk_id, label_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -333,7 +333,7 @@ async fn test_create_rating_as_organizer() {
 
     let req = Request::builder()
         .method("POST")
-        .uri(&format!("/api/talks/{}/ratings", talk_id))
+        .uri(format!("/api/talks/{}/ratings", talk_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -375,7 +375,7 @@ async fn test_create_rating_requires_organizer() {
 
     let req = Request::builder()
         .method("POST")
-        .uri(&format!("/api/talks/{}/ratings", talk_id))
+        .uri(format!("/api/talks/{}/ratings", talk_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -436,7 +436,7 @@ async fn test_update_rating() {
 
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/ratings/{}", rating_id))
+        .uri(format!("/api/ratings/{}", rating_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -510,7 +510,7 @@ async fn test_update_rating_only_own() {
 
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/ratings/{}", rating_id))
+        .uri(format!("/api/ratings/{}", rating_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -571,7 +571,7 @@ async fn test_delete_rating() {
 
     let req = Request::builder()
         .method("DELETE")
-        .uri(&format!("/api/ratings/{}", rating_id))
+        .uri(format!("/api/ratings/{}", rating_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -646,7 +646,7 @@ async fn test_list_ratings_for_talk() {
 
     let req = Request::builder()
         .method("GET")
-        .uri(&format!("/api/talks/{}/ratings", talk_id))
+        .uri(format!("/api/talks/{}/ratings", talk_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -682,7 +682,7 @@ async fn test_list_ratings_requires_organizer() {
 
     let req = Request::builder()
         .method("GET")
-        .uri(&format!("/api/talks/{}/ratings", talk_id))
+        .uri(format!("/api/talks/{}/ratings", talk_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();

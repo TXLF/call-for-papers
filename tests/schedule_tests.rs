@@ -150,7 +150,7 @@ async fn test_get_conference_by_id() {
 
     let req = Request::builder()
         .method("GET")
-        .uri(&format!("/api/conferences/{}", conference_id))
+        .uri(format!("/api/conferences/{}", conference_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -184,7 +184,7 @@ async fn test_update_conference() {
 
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/conferences/{}", conference_id))
+        .uri(format!("/api/conferences/{}", conference_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -320,7 +320,7 @@ async fn test_list_tracks_for_conference() {
 
     let req = Request::builder()
         .method("GET")
-        .uri(&format!("/api/conferences/{}/tracks", conference_id))
+        .uri(format!("/api/conferences/{}/tracks", conference_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -356,7 +356,7 @@ async fn test_update_track() {
 
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/tracks/{}", track_id))
+        .uri(format!("/api/tracks/{}", track_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -398,7 +398,7 @@ async fn test_delete_track() {
 
     let req = Request::builder()
         .method("DELETE")
-        .uri(&format!("/api/tracks/{}", track_id))
+        .uri(format!("/api/tracks/{}", track_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -549,7 +549,7 @@ async fn test_assign_talk_to_slot() {
 
     let req = Request::builder()
         .method("PUT")
-        .uri(&format!("/api/schedule-slots/{}/talk", slot_id))
+        .uri(format!("/api/schedule-slots/{}/talk", slot_id))
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::from(
@@ -613,7 +613,7 @@ async fn test_unassign_talk_from_slot() {
 
     let req = Request::builder()
         .method("DELETE")
-        .uri(&format!("/api/schedule-slots/{}/talk", slot_id))
+        .uri(format!("/api/schedule-slots/{}/talk", slot_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -671,7 +671,7 @@ async fn test_get_conference_schedule() {
 
     let req = Request::builder()
         .method("GET")
-        .uri(&format!("/api/conferences/{}/schedule", conference_id))
+        .uri(format!("/api/conferences/{}/schedule", conference_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();
@@ -715,7 +715,7 @@ async fn test_delete_schedule_slot() {
 
     let req = Request::builder()
         .method("DELETE")
-        .uri(&format!("/api/schedule-slots/{}", slot_id))
+        .uri(format!("/api/schedule-slots/{}", slot_id))
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
         .unwrap();

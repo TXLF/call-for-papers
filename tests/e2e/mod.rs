@@ -131,7 +131,7 @@ impl E2eContext {
     /// Wait for navigation
     pub async fn wait_for_navigation(
         &self,
-        timeout_secs: u64,
+        _timeout_secs: u64,
     ) -> Result<(), Box<dyn std::error::Error>> {
         sleep(Duration::from_millis(500)).await;
         Ok(())
