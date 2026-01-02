@@ -1,4 +1,6 @@
 mod common;
+use serial_test::serial;
+
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
@@ -6,6 +8,7 @@ use common::*;
 use serde_json::json;
 
 #[tokio::test]
+#[serial]
 async fn test_create_talk_success() {
     let ctx = TestContext::new().await;
 
@@ -54,6 +57,7 @@ async fn test_create_talk_success() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_create_talk_without_auth() {
     let ctx = TestContext::new().await;
 
@@ -78,6 +82,7 @@ async fn test_create_talk_without_auth() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_create_talk_missing_required_fields() {
     let ctx = TestContext::new().await;
 
@@ -115,6 +120,7 @@ async fn test_create_talk_missing_required_fields() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_list_my_talks() {
     let ctx = TestContext::new().await;
 
@@ -153,6 +159,7 @@ async fn test_list_my_talks() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_get_talk_by_id() {
     let ctx = TestContext::new().await;
 
@@ -188,6 +195,7 @@ async fn test_get_talk_by_id() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_update_talk() {
     let ctx = TestContext::new().await;
 
@@ -231,6 +239,7 @@ async fn test_update_talk() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_update_talk_unauthorized() {
     let ctx = TestContext::new().await;
 
@@ -282,6 +291,7 @@ async fn test_update_talk_unauthorized() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_delete_talk() {
     let ctx = TestContext::new().await;
 
@@ -325,6 +335,7 @@ async fn test_delete_talk() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_list_all_talks_as_organizer() {
     let ctx = TestContext::new().await;
 
@@ -383,6 +394,7 @@ async fn test_list_all_talks_as_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_list_all_talks_requires_organizer() {
     let ctx = TestContext::new().await;
 
@@ -414,6 +426,7 @@ async fn test_list_all_talks_requires_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_change_talk_state_as_organizer() {
     let ctx = TestContext::new().await;
 
@@ -466,6 +479,7 @@ async fn test_change_talk_state_as_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_change_talk_state_requires_organizer() {
     let ctx = TestContext::new().await;
 
@@ -506,6 +520,7 @@ async fn test_change_talk_state_requires_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_respond_to_talk() {
     let ctx = TestContext::new().await;
 
@@ -554,6 +569,7 @@ async fn test_respond_to_talk() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_respond_to_talk_reject() {
     let ctx = TestContext::new().await;
 
@@ -602,6 +618,7 @@ async fn test_respond_to_talk_reject() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_respond_to_talk_wrong_state() {
     let ctx = TestContext::new().await;
 

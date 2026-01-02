@@ -1,4 +1,6 @@
 mod common;
+use serial_test::serial;
+
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
@@ -6,6 +8,7 @@ use common::*;
 use serde_json::json;
 
 #[tokio::test]
+#[serial]
 async fn test_register_success() {
     let ctx = TestContext::new().await;
 
@@ -37,6 +40,7 @@ async fn test_register_success() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_register_duplicate_email() {
     let ctx = TestContext::new().await;
 
@@ -76,6 +80,7 @@ async fn test_register_duplicate_email() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_register_invalid_email() {
     let ctx = TestContext::new().await;
 
@@ -102,6 +107,7 @@ async fn test_register_invalid_email() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_login_success() {
     let ctx = TestContext::new().await;
 
@@ -141,6 +147,7 @@ async fn test_login_success() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_login_wrong_password() {
     let ctx = TestContext::new().await;
 
@@ -178,6 +185,7 @@ async fn test_login_wrong_password() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_login_nonexistent_user() {
     let ctx = TestContext::new().await;
 
@@ -203,6 +211,7 @@ async fn test_login_nonexistent_user() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_protected_route_without_token() {
     let ctx = TestContext::new().await;
 
@@ -220,6 +229,7 @@ async fn test_protected_route_without_token() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_protected_route_with_valid_token() {
     let ctx = TestContext::new().await;
 
@@ -252,6 +262,7 @@ async fn test_protected_route_with_valid_token() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_protected_route_with_invalid_token() {
     let ctx = TestContext::new().await;
 
@@ -270,6 +281,7 @@ async fn test_protected_route_with_invalid_token() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_organizer_route_requires_organizer_role() {
     let ctx = TestContext::new().await;
 
@@ -301,6 +313,7 @@ async fn test_organizer_route_requires_organizer_role() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_organizer_route_with_organizer_role() {
     let ctx = TestContext::new().await;
 

@@ -1,4 +1,6 @@
 mod common;
+use serial_test::serial;
+
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
@@ -10,6 +12,7 @@ use serde_json::json;
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_create_label_as_organizer() {
     let ctx = TestContext::new().await;
 
@@ -50,6 +53,7 @@ async fn test_create_label_as_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_create_label_requires_organizer() {
     let ctx = TestContext::new().await;
 
@@ -87,6 +91,7 @@ async fn test_create_label_requires_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_list_labels() {
     let ctx = TestContext::new().await;
 
@@ -125,6 +130,7 @@ async fn test_list_labels() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_update_label_as_organizer() {
     let ctx = TestContext::new().await;
 
@@ -166,6 +172,7 @@ async fn test_update_label_as_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_delete_label_as_organizer() {
     let ctx = TestContext::new().await;
 
@@ -198,6 +205,7 @@ async fn test_delete_label_as_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_add_label_to_talk() {
     let ctx = TestContext::new().await;
 
@@ -248,6 +256,7 @@ async fn test_add_label_to_talk() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_remove_label_from_talk() {
     let ctx = TestContext::new().await;
 
@@ -304,6 +313,7 @@ async fn test_remove_label_from_talk() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_create_rating_as_organizer() {
     let ctx = TestContext::new().await;
 
@@ -356,6 +366,7 @@ async fn test_create_rating_as_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_create_rating_requires_organizer() {
     let ctx = TestContext::new().await;
 
@@ -395,6 +406,7 @@ async fn test_create_rating_requires_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_update_rating() {
     let ctx = TestContext::new().await;
 
@@ -458,6 +470,7 @@ async fn test_update_rating() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_update_rating_only_own() {
     let ctx = TestContext::new().await;
 
@@ -530,6 +543,7 @@ async fn test_update_rating_only_own() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_delete_rating() {
     let ctx = TestContext::new().await;
 
@@ -584,6 +598,7 @@ async fn test_delete_rating() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_list_ratings_for_talk() {
     let ctx = TestContext::new().await;
 
@@ -663,6 +678,7 @@ async fn test_list_ratings_for_talk() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_list_ratings_requires_organizer() {
     let ctx = TestContext::new().await;
 

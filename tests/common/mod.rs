@@ -274,8 +274,10 @@ pub async fn create_test_talk(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     #[tokio::test]
+    #[serial]
     async fn test_context_creation() {
         let ctx = TestContext::new().await;
         assert!(!ctx.db.is_closed());
@@ -283,6 +285,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn test_create_test_user() {
         let ctx = TestContext::new().await;
         let user_id = create_test_user(

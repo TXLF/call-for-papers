@@ -1,4 +1,6 @@
 mod common;
+use serial_test::serial;
+
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
@@ -10,6 +12,7 @@ use serde_json::json;
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_create_conference_as_organizer() {
     let ctx = TestContext::new().await;
 
@@ -55,6 +58,7 @@ async fn test_create_conference_as_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_create_conference_requires_organizer() {
     let ctx = TestContext::new().await;
 
@@ -95,6 +99,7 @@ async fn test_create_conference_requires_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_list_conferences() {
     let ctx = TestContext::new().await;
 
@@ -131,6 +136,7 @@ async fn test_list_conferences() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_get_conference_by_id() {
     let ctx = TestContext::new().await;
 
@@ -165,6 +171,7 @@ async fn test_get_conference_by_id() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_update_conference() {
     let ctx = TestContext::new().await;
 
@@ -215,6 +222,7 @@ async fn test_update_conference() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_create_track_as_organizer() {
     let ctx = TestContext::new().await;
 
@@ -258,6 +266,7 @@ async fn test_create_track_as_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_create_track_requires_organizer() {
     let ctx = TestContext::new().await;
 
@@ -298,6 +307,7 @@ async fn test_create_track_requires_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_list_tracks_for_conference() {
     let ctx = TestContext::new().await;
 
@@ -336,6 +346,7 @@ async fn test_list_tracks_for_conference() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_update_track() {
     let ctx = TestContext::new().await;
 
@@ -378,6 +389,7 @@ async fn test_update_track() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_delete_track() {
     let ctx = TestContext::new().await;
 
@@ -415,6 +427,7 @@ async fn test_delete_track() {
 // ============================================================================
 
 #[tokio::test]
+#[serial]
 async fn test_create_schedule_slot() {
     let ctx = TestContext::new().await;
 
@@ -458,6 +471,7 @@ async fn test_create_schedule_slot() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_create_schedule_slot_requires_organizer() {
     let ctx = TestContext::new().await;
 
@@ -499,6 +513,7 @@ async fn test_create_schedule_slot_requires_organizer() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_assign_talk_to_slot() {
     let ctx = TestContext::new().await;
 
@@ -569,6 +584,7 @@ async fn test_assign_talk_to_slot() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_unassign_talk_from_slot() {
     let ctx = TestContext::new().await;
 
@@ -627,6 +643,7 @@ async fn test_unassign_talk_from_slot() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_get_conference_schedule() {
     let ctx = TestContext::new().await;
 
@@ -685,6 +702,7 @@ async fn test_get_conference_schedule() {
 }
 
 #[tokio::test]
+#[serial]
 async fn test_delete_schedule_slot() {
     let ctx = TestContext::new().await;
 
