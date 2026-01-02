@@ -248,7 +248,7 @@ async fn test_organizer_rate_talk() {
     // Select rating (assuming 1-5 scale with radio buttons or select)
     ctx.click("input[value='5']")
         .await
-        .or_else(|_| async { ctx.fill_input("#rating-score", "5").await }.await)
+        .or_else(|_| async { ctx.fill_input("#rating-score", "5").await })
         .expect("Failed to select rating");
 
     // Add notes
@@ -475,7 +475,7 @@ async fn test_organizer_change_talk_state() {
 
     ctx.click(".state-option[value='pending']")
         .await
-        .or_else(|_| async { ctx.fill_input("#talk-state", "pending").await }.await)
+        .or_else(|_| async { ctx.fill_input("#talk-state", "pending").await })
         .expect("Failed to select pending state");
 
     ctx.click(".save-state-button")

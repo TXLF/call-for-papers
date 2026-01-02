@@ -271,7 +271,7 @@ mod tests {
     #[tokio::test]
     async fn test_context_creation() {
         let ctx = TestContext::new().await;
-        assert!(ctx.db.is_closed() == false);
+        assert!(!ctx.db.is_closed());
         ctx.cleanup().await;
     }
 
