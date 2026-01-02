@@ -89,7 +89,7 @@ pub struct ChangeStateRequest {
     pub reason: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TalkResponse {
     pub id: Uuid,
     pub speaker_id: Uuid,
