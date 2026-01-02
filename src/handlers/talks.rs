@@ -648,7 +648,7 @@ pub async fn change_talk_state(
     if !talk.state.can_transition_to(&payload.new_state) {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(ErrorResponse::new(&format!(
+            Json(ErrorResponse::new(format!(
                 "Invalid state transition: cannot move from {:?} to {:?}",
                 talk.state, payload.new_state
             ))),

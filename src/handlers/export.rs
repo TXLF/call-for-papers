@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use uuid::Uuid;
 
-use crate::{api::AppState, models::talk::TalkState};
+use crate::api::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct ExportQuery {

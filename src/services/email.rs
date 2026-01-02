@@ -4,7 +4,6 @@ use lettre::{
     AsyncTransport, Message, Tokio1Executor,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use sqlx::PgPool;
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;

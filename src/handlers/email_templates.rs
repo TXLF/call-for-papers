@@ -101,7 +101,7 @@ pub async fn create_email_template(
     }
 
     // Validate template_type is a valid enum value
-    let valid_types = vec![
+    let valid_types = [
         "submission_confirmation",
         "talk_accepted",
         "talk_rejected",
@@ -112,7 +112,7 @@ pub async fn create_email_template(
     if !valid_types.contains(&payload.template_type.as_str()) {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(ErrorResponse::new(&format!(
+            Json(ErrorResponse::new(format!(
                 "Invalid template type. Must be one of: {}",
                 valid_types.join(", ")
             ))),
