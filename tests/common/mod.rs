@@ -6,9 +6,8 @@ use call_for_papers::config::Config;
 use http_body_util::BodyExt;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use sqlx::postgres::{PgPoolOptions, PgRow};
-use sqlx::{PgPool, Row};
-use std::net::{SocketAddr, TcpListener};
+use sqlx::postgres::PgPoolOptions;
+use sqlx::PgPool;
 use tower::ServiceExt;
 
 /// Test configuration
