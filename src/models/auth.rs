@@ -79,7 +79,7 @@ pub struct FacebookUserInfo {
     pub email: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LinkedInUserInfo {
     pub sub: String, // LinkedIn user ID
     pub email: String,

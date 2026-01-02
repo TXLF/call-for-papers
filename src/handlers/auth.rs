@@ -443,7 +443,7 @@ pub async fn google_callback(
     // Exchange the code for an access token
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(http_client)
+        .request_async(&http_client)
         .await
         .map_err(|e| {
             tracing::error!("Failed to exchange code for token: {}", e);
@@ -715,7 +715,7 @@ pub async fn github_callback(
     // Exchange the code for an access token
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(http_client)
+        .request_async(&http_client)
         .await
         .map_err(|e| {
             tracing::error!("Failed to exchange code for token: {}", e);
@@ -1049,7 +1049,7 @@ pub async fn apple_callback(
     // Exchange the code for an access token
     let _token_result = client
         .exchange_code(AuthorizationCode::new(query.code.clone()))
-        .request_async(http_client)
+        .request_async(&http_client)
         .await
         .map_err(|e| {
             tracing::error!("Failed to exchange code for token: {}", e);
@@ -1343,7 +1343,7 @@ pub async fn facebook_callback(
     // Exchange the code for an access token
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code))
-        .request_async(http_client)
+        .request_async(&http_client)
         .await
         .map_err(|e| {
             tracing::error!("Failed to exchange code for token: {}", e);
@@ -1656,7 +1656,7 @@ pub async fn linkedin_callback(
     // Exchange the code for an access token
     let token_result = client
         .exchange_code(AuthorizationCode::new(query.code.clone()))
-        .request_async(http_client)
+        .request_async(&http_client)
         .await
         .map_err(|e| {
             (
