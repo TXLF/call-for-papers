@@ -11,6 +11,7 @@ use sqlx::PgPool;
 use tower::ServiceExt;
 
 /// Test configuration
+#[allow(dead_code)]
 pub struct TestContext {
     pub db: PgPool,
     pub app: Router,
@@ -18,6 +19,7 @@ pub struct TestContext {
     pub base_url: String,
 }
 
+#[allow(dead_code)]
 impl TestContext {
     /// Create a new test context with isolated database
     pub async fn new() -> Self {

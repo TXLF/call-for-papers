@@ -10,6 +10,7 @@ pub struct E2eContext {
     server_process: Option<Child>,
 }
 
+#[allow(dead_code)]
 impl E2eContext {
     /// Create a new E2E test context with a running application
     #[allow(clippy::zombie_processes)]
