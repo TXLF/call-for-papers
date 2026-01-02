@@ -6,10 +6,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
-use crate::{
-    api::AppState,
-    models::label::Label,
-};
+use crate::{api::AppState, models::label::Label};
 
 #[derive(Debug, Deserialize)]
 pub struct AutoTagQuery {
@@ -56,7 +53,10 @@ pub async fn auto_tag_with_claude(
         _ => {
             return Err((
                 StatusCode::BAD_REQUEST,
-                format!("Invalid provider: {}. Must be 'claude' or 'openai'", provider),
+                format!(
+                    "Invalid provider: {}. Must be 'claude' or 'openai'",
+                    provider
+                ),
             ));
         }
     }
@@ -98,7 +98,12 @@ pub async fn auto_tag_with_claude(
     let rows = sqlx::query(&query)
         .fetch_all(&state.db)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?;
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
 
     if rows.is_empty() {
         return Err((
@@ -118,33 +123,39 @@ pub async fn auto_tag_with_claude(
         talks.push(talk);
     }
 
-    let talks_json = serde_json::to_string_pretty(&talks)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to serialize talks: {}", e)))?;
+    let talks_json = serde_json::to_string_pretty(&talks).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to serialize talks: {}", e),
+        )
+    })?;
 
     // Call the appropriate AI API
     let suggested_labels = match provider {
-        "claude" => {
-            state
-                .claude_service
-                .suggest_labels(&talks_json)
-                .await
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
-        }
-        "openai" => {
-            state
-                .openai_service
-                .suggest_labels(&talks_json)
-                .await
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?
-        }
+        "claude" => state
+            .claude_service
+            .suggest_labels(&talks_json)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?,
+        "openai" => state
+            .openai_service
+            .suggest_labels(&talks_json)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?,
         _ => unreachable!(), // Already validated above
     };
 
     // Fetch existing labels from database
-    let existing_labels_db = sqlx::query_as::<_, Label>("SELECT * FROM labels WHERE is_ai_generated = false")
-        .fetch_all(&state.db)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?;
+    let existing_labels_db =
+        sqlx::query_as::<_, Label>("SELECT * FROM labels WHERE is_ai_generated = false")
+            .fetch_all(&state.db)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Database error: {}", e),
+                )
+            })?;
 
     let existing_label_names: Vec<String> = existing_labels_db
         .iter()
@@ -190,13 +201,17 @@ pub async fn create_ai_labels(
 
     for label_name in payload.labels {
         // Check if label already exists
-        let existing = sqlx::query_as::<_, Label>(
-            "SELECT * FROM labels WHERE LOWER(name) = LOWER($1)",
-        )
-        .bind(&label_name)
-        .fetch_optional(&state.db)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?;
+        let existing =
+            sqlx::query_as::<_, Label>("SELECT * FROM labels WHERE LOWER(name) = LOWER($1)")
+                .bind(&label_name)
+                .fetch_optional(&state.db)
+                .await
+                .map_err(|e| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Database error: {}", e),
+                    )
+                })?;
 
         if existing.is_some() {
             skipped.push(label_name);
@@ -215,7 +230,12 @@ pub async fn create_ai_labels(
         .bind(format!("AI-generated label for {}", label_name))
         .fetch_one(&state.db)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create label: {}", e)))?;
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to create label: {}", e),
+            )
+        })?;
 
         created.push(label);
     }

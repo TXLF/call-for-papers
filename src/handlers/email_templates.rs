@@ -144,7 +144,10 @@ pub async fn create_email_template(
     })?;
 
     tracing::info!("Email template created: {}", template.id);
-    Ok((StatusCode::CREATED, Json(EmailTemplateResponse::from(template))))
+    Ok((
+        StatusCode::CREATED,
+        Json(EmailTemplateResponse::from(template)),
+    ))
 }
 
 /// Update an existing email template (organizer-only)

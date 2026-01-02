@@ -8,8 +8,8 @@ use uuid::Uuid;
 use crate::{
     api::AppState,
     models::{
-        auth::ErrorResponse, CreateRatingRequest, Rating, RatingResponse, User,
-        RatingsStatisticsResponse, TalkRatingStats, RatingDistribution,
+        auth::ErrorResponse, CreateRatingRequest, Rating, RatingDistribution, RatingResponse,
+        RatingsStatisticsResponse, TalkRatingStats, User,
     },
 };
 
@@ -80,10 +80,8 @@ pub async fn create_or_update_rating(
         )
     })?;
 
-    let response = RatingResponse::from(rating).with_organizer_info(
-        user.full_name.clone(),
-        user.email.clone(),
-    );
+    let response = RatingResponse::from(rating)
+        .with_organizer_info(user.full_name.clone(), user.email.clone());
 
     Ok(Json(response))
 }
@@ -242,10 +240,8 @@ pub async fn get_my_rating(
 
     match rating {
         Some(rating) => {
-            let response = RatingResponse::from(rating).with_organizer_info(
-                user.full_name.clone(),
-                user.email.clone(),
-            );
+            let response = RatingResponse::from(rating)
+                .with_organizer_info(user.full_name.clone(), user.email.clone());
             Ok(Json(response))
         }
         None => Err((

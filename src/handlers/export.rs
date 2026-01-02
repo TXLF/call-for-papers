@@ -7,10 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use uuid::Uuid;
 
-use crate::{
-    api::AppState,
-    models::talk::TalkState,
-};
+use crate::{api::AppState, models::talk::TalkState};
 
 #[derive(Debug, Deserialize)]
 pub struct ExportQuery {
@@ -94,42 +91,74 @@ pub async fn export_talks(
     let rows = sqlx::query(&query)
         .fetch_all(&state.db)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)))?;
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {}", e),
+            )
+        })?;
 
     let mut talks = Vec::new();
     for row in rows {
-        let labels_json: serde_json::Value = row
-            .try_get("labels")
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get labels: {}", e)))?;
+        let labels_json: serde_json::Value = row.try_get("labels").map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to get labels: {}", e),
+            )
+        })?;
 
-        let labels: Vec<String> = serde_json::from_value(labels_json)
-            .unwrap_or_default();
+        let labels: Vec<String> = serde_json::from_value(labels_json).unwrap_or_default();
 
         talks.push(ExportedTalk {
             id: row
                 .try_get::<Uuid, _>("id")
                 .map(|id| id.to_string())
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get id: {}", e)))?,
-            title: row
-                .try_get("title")
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get title: {}", e)))?,
-            short_summary: row
-                .try_get("short_summary")
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get short_summary: {}", e)))?,
+                .map_err(|e| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Failed to get id: {}", e),
+                    )
+                })?,
+            title: row.try_get("title").map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to get title: {}", e),
+                )
+            })?,
+            short_summary: row.try_get("short_summary").map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to get short_summary: {}", e),
+                )
+            })?,
             long_description: row.try_get("long_description").ok(),
-            speaker_name: row
-                .try_get("speaker_name")
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get speaker_name: {}", e)))?,
-            speaker_email: row
-                .try_get("speaker_email")
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get speaker_email: {}", e)))?,
-            state: row
-                .try_get("state")
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get state: {}", e)))?,
+            speaker_name: row.try_get("speaker_name").map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to get speaker_name: {}", e),
+                )
+            })?,
+            speaker_email: row.try_get("speaker_email").map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to get speaker_email: {}", e),
+                )
+            })?,
+            state: row.try_get("state").map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to get state: {}", e),
+                )
+            })?,
             submitted_at: row
                 .try_get::<chrono::NaiveDateTime, _>("submitted_at")
                 .map(|dt| dt.to_string())
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get submitted_at: {}", e)))?,
+                .map_err(|e| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Failed to get submitted_at: {}", e),
+                    )
+                })?,
             labels,
             average_rating: row.try_get("average_rating").ok(),
             rating_count: row.try_get("rating_count").unwrap_or(0),

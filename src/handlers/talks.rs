@@ -11,8 +11,8 @@ use uuid::Uuid;
 use crate::{
     api::AppState,
     models::{
-        auth::ErrorResponse, CreateTalkRequest, Label, LabelResponse, Talk, TalkResponse,
-        TalkState, UpdateTalkRequest, RespondToTalkRequest, TalkAction, ChangeStateRequest, User,
+        auth::ErrorResponse, ChangeStateRequest, CreateTalkRequest, Label, LabelResponse,
+        RespondToTalkRequest, Talk, TalkAction, TalkResponse, TalkState, UpdateTalkRequest, User,
     },
 };
 
@@ -112,7 +112,9 @@ pub async fn create_talk(
     }
 
     // Fetch labels and return
-    let labels = fetch_talk_labels(&state.db, talk.id).await.unwrap_or_default();
+    let labels = fetch_talk_labels(&state.db, talk.id)
+        .await
+        .unwrap_or_default();
     let response = TalkResponse::from(talk).with_labels(labels);
 
     Ok((StatusCode::CREATED, Json(response)))
@@ -144,7 +146,9 @@ pub async fn get_my_talks(
     // Fetch labels for each talk
     let mut responses = Vec::new();
     for talk in talks {
-        let labels = fetch_talk_labels(&state.db, talk.id).await.unwrap_or_default();
+        let labels = fetch_talk_labels(&state.db, talk.id)
+            .await
+            .unwrap_or_default();
         responses.push(TalkResponse::from(talk).with_labels(labels));
     }
 
@@ -185,12 +189,16 @@ pub async fn get_talk(
     if talk.speaker_id != user.id && !user.is_organizer {
         return Err((
             StatusCode::FORBIDDEN,
-            Json(ErrorResponse::new("You don't have permission to view this talk")),
+            Json(ErrorResponse::new(
+                "You don't have permission to view this talk",
+            )),
         ));
     }
 
     // Fetch labels for the talk
-    let labels = fetch_talk_labels(&state.db, talk.id).await.unwrap_or_default();
+    let labels = fetch_talk_labels(&state.db, talk.id)
+        .await
+        .unwrap_or_default();
     let response = TalkResponse::from(talk).with_labels(labels);
 
     Ok(Json(response))
@@ -417,17 +425,13 @@ pub async fn upload_slides(
     // Process the multipart form data
     let mut file_path: Option<String> = None;
 
-    while let Some(field) = multipart
-        .next_field()
-        .await
-        .map_err(|e| {
-            tracing::error!("Error reading multipart field: {}", e);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse::new("Invalid file upload")),
-            )
-        })?
-    {
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        tracing::error!("Error reading multipart field: {}", e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse::new("Invalid file upload")),
+        )
+    })? {
         let name = field.name().unwrap_or("").to_string();
         if name != "slides" {
             continue;
@@ -446,10 +450,7 @@ pub async fn upload_slides(
         // Validate file extension
         let allowed_extensions = ["pdf", "ppt", "pptx", "key", "odp"];
         let path_buf = PathBuf::from(&file_name);
-        let extension = path_buf
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("");
+        let extension = path_buf.extension().and_then(|e| e.to_str()).unwrap_or("");
 
         if !allowed_extensions.contains(&extension.to_lowercase().as_str()) {
             return Err((
@@ -483,15 +484,13 @@ pub async fn upload_slides(
         }
 
         // Save file to disk
-        tokio::fs::write(&file_path_buf, data)
-            .await
-            .map_err(|e| {
-                tracing::error!("Error saving file: {}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ErrorResponse::new("Failed to save file")),
-                )
-            })?;
+        tokio::fs::write(&file_path_buf, data).await.map_err(|e| {
+            tracing::error!("Error saving file: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to save file")),
+            )
+        })?;
 
         file_path = Some(format!("/uploads/{}", unique_name));
         break;
@@ -684,7 +683,11 @@ pub async fn change_talk_state(
         talk_id,
         talk.state,
         payload.new_state,
-        payload.reason.as_ref().map(|r| format!(" (reason: {})", r)).unwrap_or_default()
+        payload
+            .reason
+            .as_ref()
+            .map(|r| format!(" (reason: {})", r))
+            .unwrap_or_default()
     );
 
     // Send email notification to speaker about state change
@@ -712,7 +715,9 @@ pub async fn change_talk_state(
             if !template_type.is_empty() {
                 // Get conference_id from talk (we'll need to add this to Talk struct or fetch separately)
                 // For now, use a default/active conference
-                if let Ok(conf) = crate::handlers::conferences::get_active_conference_internal(&state.db).await {
+                if let Ok(conf) =
+                    crate::handlers::conferences::get_active_conference_internal(&state.db).await
+                {
                     let variables = crate::services::email::EmailVariables {
                         speaker_name,
                         speaker_email: speaker_email.clone(),
@@ -764,7 +769,9 @@ pub async fn list_all_talks(
             _ => {
                 return Err((
                     StatusCode::BAD_REQUEST,
-                    Json(ErrorResponse::new("Invalid state filter. Use: submitted, pending, accepted, or rejected")),
+                    Json(ErrorResponse::new(
+                        "Invalid state filter. Use: submitted, pending, accepted, or rejected",
+                    )),
                 ));
             }
         };
@@ -819,7 +826,9 @@ pub async fn list_all_talks(
         })?;
 
         // Fetch labels
-        let labels = fetch_talk_labels(&state.db, talk.id).await.unwrap_or_default();
+        let labels = fetch_talk_labels(&state.db, talk.id)
+            .await
+            .unwrap_or_default();
 
         // Build response with speaker info and labels
         let response = TalkResponse::from(talk)

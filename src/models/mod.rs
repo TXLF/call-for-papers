@@ -1,19 +1,34 @@
-pub mod user;
 pub mod auth;
-pub mod talk;
-pub mod label;
-pub mod rating;
-pub mod track;
-pub mod schedule_slot;
 pub mod conference;
 pub mod email_template;
+pub mod label;
+pub mod rating;
+pub mod schedule_slot;
+pub mod talk;
+pub mod track;
+pub mod user;
 
+pub use auth::{AuthResponse, Claims, LoginRequest, RegisterRequest};
+pub use conference::{
+    Conference, ConferenceResponse, CreateConferenceRequest, UpdateConferenceRequest,
+};
+pub use email_template::{
+    CreateEmailTemplateRequest, EmailTemplate, EmailTemplateResponse, UpdateEmailTemplateRequest,
+};
+pub use label::{
+    AddLabelToTalkRequest, CreateLabelRequest, Label, LabelResponse, TalkLabel, UpdateLabelRequest,
+};
+pub use rating::{
+    CreateRatingRequest, Rating, RatingDistribution, RatingResponse, RatingsStatisticsResponse,
+    TalkRatingStats, UpdateRatingRequest,
+};
+pub use schedule_slot::{
+    AssignTalkRequest, CreateScheduleSlotRequest, PublicScheduleSlot, PublicScheduleTalk,
+    ScheduleSlot, ScheduleSlotResponse, UpdateScheduleSlotRequest,
+};
+pub use talk::{
+    ChangeStateRequest, CreateTalkRequest, RespondToTalkRequest, Talk, TalkAction, TalkResponse,
+    TalkState, UpdateTalkRequest,
+};
+pub use track::{CreateTrackRequest, Track, TrackResponse, UpdateTrackRequest};
 pub use user::User;
-pub use auth::{RegisterRequest, LoginRequest, AuthResponse, Claims};
-pub use talk::{Talk, TalkState, CreateTalkRequest, UpdateTalkRequest, TalkResponse, RespondToTalkRequest, TalkAction, ChangeStateRequest};
-pub use label::{Label, LabelResponse, CreateLabelRequest, UpdateLabelRequest, AddLabelToTalkRequest, TalkLabel};
-pub use rating::{Rating, CreateRatingRequest, UpdateRatingRequest, RatingResponse, TalkRatingStats, RatingsStatisticsResponse, RatingDistribution};
-pub use track::{Track, TrackResponse, CreateTrackRequest, UpdateTrackRequest};
-pub use schedule_slot::{ScheduleSlot, ScheduleSlotResponse, CreateScheduleSlotRequest, UpdateScheduleSlotRequest, AssignTalkRequest, PublicScheduleSlot, PublicScheduleTalk};
-pub use conference::{Conference, ConferenceResponse, CreateConferenceRequest, UpdateConferenceRequest};
-pub use email_template::{EmailTemplate, EmailTemplateResponse, CreateEmailTemplateRequest, UpdateEmailTemplateRequest};

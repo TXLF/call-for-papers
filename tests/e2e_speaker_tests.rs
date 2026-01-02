@@ -6,7 +6,9 @@ use e2e::{cleanup_database, setup_database, E2eContext};
 #[ignore] // Requires WebDriver and running application
 async fn test_speaker_registration_and_login() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     let ctx = E2eContext::new()
         .await
@@ -39,14 +41,18 @@ async fn test_speaker_registration_and_login() {
     assert!(url.contains("dashboard") || url.contains("talks"));
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }
 
 #[tokio::test]
 #[ignore]
 async fn test_speaker_submit_talk() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     let ctx = E2eContext::new()
         .await
@@ -123,14 +129,18 @@ async fn test_speaker_submit_talk() {
     assert_eq!(talk_title, "Introduction to Rust Programming");
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }
 
 #[tokio::test]
 #[ignore]
 async fn test_speaker_edit_talk() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     let ctx = E2eContext::new()
         .await
@@ -213,14 +223,18 @@ async fn test_speaker_edit_talk() {
     assert_eq!(updated_title, "Updated Title");
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }
 
 #[tokio::test]
 #[ignore]
 async fn test_speaker_delete_talk() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     let ctx = E2eContext::new()
         .await
@@ -298,14 +312,18 @@ async fn test_speaker_delete_talk() {
     assert_eq!(talks_after, 0, "Talk should be deleted");
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }
 
 #[tokio::test]
 #[ignore]
 async fn test_speaker_view_talk_status() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     let ctx = E2eContext::new()
         .await
@@ -360,14 +378,18 @@ async fn test_speaker_view_talk_status() {
     );
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }
 
 #[tokio::test]
 #[ignore]
 async fn test_speaker_respond_to_acceptance() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     // This test would require:
     // 1. Creating a speaker account
@@ -402,5 +424,7 @@ async fn test_speaker_respond_to_acceptance() {
     // showing a talk in "pending" state
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }

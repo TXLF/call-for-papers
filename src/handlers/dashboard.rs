@@ -1,8 +1,4 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, Json};
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use sqlx::FromRow;

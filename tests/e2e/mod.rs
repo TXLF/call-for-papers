@@ -48,19 +48,29 @@ impl E2eContext {
     }
 
     /// Find element by CSS selector
-    pub async fn find(&self, selector: &str) -> Result<fantoccini::elements::Element, Box<dyn std::error::Error>> {
+    pub async fn find(
+        &self,
+        selector: &str,
+    ) -> Result<fantoccini::elements::Element, Box<dyn std::error::Error>> {
         let element = self.client.find(Locator::Css(selector)).await?;
         Ok(element)
     }
 
     /// Find all elements by CSS selector
-    pub async fn find_all(&self, selector: &str) -> Result<Vec<fantoccini::elements::Element>, Box<dyn std::error::Error>> {
+    pub async fn find_all(
+        &self,
+        selector: &str,
+    ) -> Result<Vec<fantoccini::elements::Element>, Box<dyn std::error::Error>> {
         let elements = self.client.find_all(Locator::Css(selector)).await?;
         Ok(elements)
     }
 
     /// Wait for element to appear
-    pub async fn wait_for(&self, selector: &str, timeout_secs: u64) -> Result<fantoccini::elements::Element, Box<dyn std::error::Error>> {
+    pub async fn wait_for(
+        &self,
+        selector: &str,
+        timeout_secs: u64,
+    ) -> Result<fantoccini::elements::Element, Box<dyn std::error::Error>> {
         let start = std::time::Instant::now();
         loop {
             if let Ok(element) = self.find(selector).await {
@@ -74,7 +84,11 @@ impl E2eContext {
     }
 
     /// Fill input field
-    pub async fn fill_input(&self, selector: &str, value: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn fill_input(
+        &self,
+        selector: &str,
+        value: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let input = self.find(selector).await?;
         input.send_keys(value).await?;
         Ok(())
@@ -114,13 +128,20 @@ impl E2eContext {
     }
 
     /// Wait for navigation
-    pub async fn wait_for_navigation(&self, timeout_secs: u64) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn wait_for_navigation(
+        &self,
+        timeout_secs: u64,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         sleep(Duration::from_millis(500)).await;
         Ok(())
     }
 
     /// Login as a user
-    pub async fn login(&self, email: &str, password: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn login(
+        &self,
+        email: &str,
+        password: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.goto("/login").await?;
         self.wait_for("#email", 5).await?;
 
@@ -190,9 +211,7 @@ pub async fn setup_database() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     // Run migrations
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await?;
+    sqlx::migrate!("./migrations").run(&pool).await?;
 
     Ok(())
 }
@@ -238,7 +257,9 @@ mod tests {
     #[tokio::test]
     #[ignore] // Requires WebDriver running
     async fn test_e2e_context_creation() {
-        let ctx = E2eContext::new().await.expect("Failed to create E2E context");
+        let ctx = E2eContext::new()
+            .await
+            .expect("Failed to create E2E context");
 
         // Navigate to home page
         ctx.goto("/").await.expect("Failed to navigate");

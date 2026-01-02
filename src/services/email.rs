@@ -108,9 +108,7 @@ impl EmailService {
         // Convert EmailVariables to HashMap for handlebars
         let json_value = serde_json::to_value(variables).map_err(|e| e.to_string())?;
         let vars: HashMap<String, serde_json::Value> = if let Some(obj) = json_value.as_object() {
-            obj.iter()
-                .map(|(k, v)| (k.clone(), v.clone()))
-                .collect()
+            obj.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
         } else {
             HashMap::new()
         };
@@ -143,8 +141,14 @@ impl EmailService {
 
         // Build email message
         let email = Message::builder()
-            .from(smtp_from.parse().map_err(|e| format!("Invalid from address: {}", e))?)
-            .to(to_email.parse().map_err(|e| format!("Invalid to address: {}", e))?)
+            .from(
+                smtp_from
+                    .parse()
+                    .map_err(|e| format!("Invalid from address: {}", e))?,
+            )
+            .to(to_email
+                .parse()
+                .map_err(|e| format!("Invalid to address: {}", e))?)
             .subject(subject)
             .header(ContentType::TEXT_PLAIN)
             .body(body.to_string())

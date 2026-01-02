@@ -129,21 +129,9 @@ async fn test_list_my_talks() {
     )
     .await;
 
-    create_test_talk(
-        &ctx.db,
-        user_id,
-        "Talk 1",
-        "Summary 1",
-    )
-    .await;
+    create_test_talk(&ctx.db, user_id, "Talk 1", "Summary 1").await;
 
-    create_test_talk(
-        &ctx.db,
-        user_id,
-        "Talk 2",
-        "Summary 2",
-    )
-    .await;
+    create_test_talk(&ctx.db, user_id, "Talk 2", "Summary 2").await;
 
     let token = generate_test_token(user_id, "speaker@example.com", false);
 
@@ -178,13 +166,7 @@ async fn test_get_talk_by_id() {
     )
     .await;
 
-    let talk_id = create_test_talk(
-        &ctx.db,
-        user_id,
-        "Test Talk",
-        "Test Summary",
-    )
-    .await;
+    let talk_id = create_test_talk(&ctx.db, user_id, "Test Talk", "Test Summary").await;
 
     let token = generate_test_token(user_id, "speaker@example.com", false);
 
@@ -219,13 +201,7 @@ async fn test_update_talk() {
     )
     .await;
 
-    let talk_id = create_test_talk(
-        &ctx.db,
-        user_id,
-        "Original Title",
-        "Original Summary",
-    )
-    .await;
+    let talk_id = create_test_talk(&ctx.db, user_id, "Original Title", "Original Summary").await;
 
     let token = generate_test_token(user_id, "speaker@example.com", false);
 
@@ -269,13 +245,7 @@ async fn test_update_talk_unauthorized() {
     )
     .await;
 
-    let talk_id = create_test_talk(
-        &ctx.db,
-        user1_id,
-        "Original Title",
-        "Original Summary",
-    )
-    .await;
+    let talk_id = create_test_talk(&ctx.db, user1_id, "Original Title", "Original Summary").await;
 
     // Create speaker 2 who tries to update speaker 1's talk
     let user2_id = create_test_user(
@@ -325,13 +295,7 @@ async fn test_delete_talk() {
     )
     .await;
 
-    let talk_id = create_test_talk(
-        &ctx.db,
-        user_id,
-        "Talk to Delete",
-        "Summary",
-    )
-    .await;
+    let talk_id = create_test_talk(&ctx.db, user_id, "Talk to Delete", "Summary").await;
 
     let token = generate_test_token(user_id, "speaker@example.com", false);
 
@@ -464,13 +428,7 @@ async fn test_change_talk_state_as_organizer() {
     )
     .await;
 
-    let talk_id = create_test_talk(
-        &ctx.db,
-        speaker_id,
-        "Test Talk",
-        "Test Summary",
-    )
-    .await;
+    let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
     // Create organizer
     let organizer_id = create_test_user(
@@ -522,13 +480,7 @@ async fn test_change_talk_state_requires_organizer() {
     )
     .await;
 
-    let talk_id = create_test_talk(
-        &ctx.db,
-        speaker_id,
-        "Test Talk",
-        "Test Summary",
-    )
-    .await;
+    let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
     let token = generate_test_token(speaker_id, "speaker@example.com", false);
 
@@ -568,13 +520,7 @@ async fn test_respond_to_talk() {
     )
     .await;
 
-    let talk_id = create_test_talk(
-        &ctx.db,
-        speaker_id,
-        "Test Talk",
-        "Test Summary",
-    )
-    .await;
+    let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
     // Set talk to pending state first (simulating organizer acceptance)
     sqlx::query("UPDATE talks SET state = 'pending' WHERE id = $1")
@@ -622,13 +568,7 @@ async fn test_respond_to_talk_reject() {
     )
     .await;
 
-    let talk_id = create_test_talk(
-        &ctx.db,
-        speaker_id,
-        "Test Talk",
-        "Test Summary",
-    )
-    .await;
+    let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
     // Set talk to pending state
     sqlx::query("UPDATE talks SET state = 'pending' WHERE id = $1")
@@ -676,13 +616,7 @@ async fn test_respond_to_talk_wrong_state() {
     )
     .await;
 
-    let talk_id = create_test_talk(
-        &ctx.db,
-        speaker_id,
-        "Test Talk",
-        "Test Summary",
-    )
-    .await;
+    let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
     // Talk is in 'submitted' state, not 'pending'
     let token = generate_test_token(speaker_id, "speaker@example.com", false);

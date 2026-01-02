@@ -24,7 +24,7 @@ pub struct AuthProvider {
 
 #[derive(Debug, Deserialize)]
 pub struct GoogleUserInfo {
-    pub sub: String,  // Google user ID
+    pub sub: String, // Google user ID
     pub email: String,
     pub name: String,
     pub picture: Option<String>,
@@ -32,9 +32,9 @@ pub struct GoogleUserInfo {
 
 #[derive(Debug, Deserialize)]
 pub struct GitHubUserInfo {
-    pub id: i64,  // GitHub user ID
-    pub login: String,  // GitHub username
-    pub email: Option<String>,  // May be null if private
+    pub id: i64,               // GitHub user ID
+    pub login: String,         // GitHub username
+    pub email: Option<String>, // May be null if private
     pub name: Option<String>,  // Display name
     pub avatar_url: Option<String>,
 }
@@ -48,7 +48,7 @@ pub struct GitHubEmail {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AppleUserInfo {
-    pub sub: String,  // Apple user ID
+    pub sub: String, // Apple user ID
     pub email: Option<String>,
     pub email_verified: Option<String>,
 }
@@ -74,14 +74,14 @@ pub struct AppleUserName {
 
 #[derive(Debug, Deserialize)]
 pub struct FacebookUserInfo {
-    pub id: String,  // Facebook user ID
+    pub id: String, // Facebook user ID
     pub name: Option<String>,
     pub email: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct LinkedInUserInfo {
-    pub sub: String,  // LinkedIn user ID
+    pub sub: String, // LinkedIn user ID
     pub email: String,
     pub name: String,
     pub picture: Option<String>,
@@ -91,7 +91,7 @@ pub struct LinkedInUserInfo {
 pub struct OAuthCallbackQuery {
     pub code: String,
     pub state: Option<String>,
-    pub user: Option<String>,  // Apple sends user data as JSON string on first auth
+    pub user: Option<String>, // Apple sends user data as JSON string on first auth
 }
 
 #[derive(Debug, Deserialize)]
@@ -117,10 +117,10 @@ pub struct AuthResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,  // User ID
+    pub sub: String, // User ID
     pub email: String,
     pub is_organizer: bool,
-    pub exp: usize,   // Expiration time
+    pub exp: usize, // Expiration time
 }
 
 #[derive(Debug, Serialize)]

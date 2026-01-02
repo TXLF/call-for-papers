@@ -10,8 +10,8 @@ use uuid::Uuid;
 use crate::{
     api::AppState,
     models::{
-        auth::ErrorResponse, AssignTalkRequest, CreateScheduleSlotRequest, ScheduleSlot,
-        ScheduleSlotResponse, UpdateScheduleSlotRequest, PublicScheduleSlot, PublicScheduleTalk,
+        auth::ErrorResponse, AssignTalkRequest, CreateScheduleSlotRequest, PublicScheduleSlot,
+        PublicScheduleTalk, ScheduleSlot, ScheduleSlotResponse, UpdateScheduleSlotRequest,
     },
 };
 
@@ -107,9 +107,7 @@ pub async fn create_schedule_slot(
             if db_err.message().contains("foreign key") {
                 return (
                     StatusCode::BAD_REQUEST,
-                    Json(ErrorResponse::new(
-                        "Invalid conference ID or track ID",
-                    )),
+                    Json(ErrorResponse::new("Invalid conference ID or track ID")),
                 );
             }
         }
@@ -378,7 +376,7 @@ pub async fn get_public_schedule(
         LEFT JOIN talks tk ON ss.talk_id = tk.id
         LEFT JOIN users u ON tk.speaker_id = u.id
         ORDER BY ss.slot_date ASC, ss.start_time ASC, t.name ASC
-        "#
+        "#,
     )
     .fetch_all(&state.db)
     .await

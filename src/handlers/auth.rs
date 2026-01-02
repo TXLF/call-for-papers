@@ -10,21 +10,24 @@ use axum::{
 };
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use oauth2::basic::BasicClient;
+use oauth2::reqwest::async_http_client;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope,
     TokenResponse, TokenUrl,
 };
-use oauth2::basic::BasicClient;
-use oauth2::reqwest::async_http_client;
 use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
     api::AppState,
     models::{
-        auth::{AuthProviderType, ErrorResponse, GoogleUserInfo, GitHubUserInfo, GitHubEmail, AppleUserData, FacebookUserInfo, LinkedInUserInfo, OAuthCallbackQuery},
+        auth::{
+            AppleUserData, AuthProviderType, ErrorResponse, FacebookUserInfo, GitHubEmail,
+            GitHubUserInfo, GoogleUserInfo, LinkedInUserInfo, OAuthCallbackQuery,
+        },
         user::UserResponse,
-        AuthResponse, Claims, LoginRequest, RegisterRequest, User
+        AuthResponse, Claims, LoginRequest, RegisterRequest, User,
     },
 };
 
@@ -49,19 +52,17 @@ pub async fn register(
     }
 
     // Check if user already exists
-    let existing_user = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE email = $1"
-    )
-    .bind(&payload.email)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|e| {
-        tracing::error!("Database error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse::new("Internal server error")),
-        )
-    })?;
+    let existing_user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
+        .bind(&payload.email)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Internal server error")),
+            )
+        })?;
 
     if existing_user.is_some() {
         return Err((
@@ -72,19 +73,18 @@ pub async fn register(
 
     // Check if username is taken (if provided)
     if let Some(ref username) = payload.username {
-        let existing_username = sqlx::query_as::<_, User>(
-            "SELECT * FROM users WHERE username = $1"
-        )
-        .bind(username)
-        .fetch_optional(&state.db)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse::new("Internal server error")),
-            )
-        })?;
+        let existing_username =
+            sqlx::query_as::<_, User>("SELECT * FROM users WHERE username = $1")
+                .bind(username)
+                .fetch_optional(&state.db)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Database error: {}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(ErrorResponse::new("Internal server error")),
+                    )
+                })?;
 
         if existing_username.is_some() {
             return Err((
@@ -128,13 +128,15 @@ pub async fn register(
     })?;
 
     // Create session token
-    let token = create_session_token(&state.db, &user, &state.config).await.map_err(|e| {
-        tracing::error!("Token creation error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse::new("Failed to create session")),
-        )
-    })?;
+    let token = create_session_token(&state.db, &user, &state.config)
+        .await
+        .map_err(|e| {
+            tracing::error!("Token creation error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to create session")),
+            )
+        })?;
 
     Ok(Json(AuthResponse {
         token,
@@ -182,13 +184,15 @@ pub async fn login(
     })?;
 
     // Create session token
-    let token = create_session_token(&state.db, &user, &state.config).await.map_err(|e| {
-        tracing::error!("Token creation error: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse::new("Failed to create session")),
-        )
-    })?;
+    let token = create_session_token(&state.db, &user, &state.config)
+        .await
+        .map_err(|e| {
+            tracing::error!("Token creation error: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("Failed to create session")),
+            )
+        })?;
 
     Ok(Json(AuthResponse {
         token,
@@ -203,12 +207,19 @@ fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error>
     Ok(password_hash.to_string())
 }
 
-fn verify_password(password: &str, password_hash: &str) -> Result<(), argon2::password_hash::Error> {
+fn verify_password(
+    password: &str,
+    password_hash: &str,
+) -> Result<(), argon2::password_hash::Error> {
     let parsed_hash = PasswordHash::new(password_hash)?;
     Argon2::default().verify_password(password.as_bytes(), &parsed_hash)
 }
 
-async fn create_session_token(pool: &PgPool, user: &User, config: &crate::config::Config) -> Result<String, anyhow::Error> {
+async fn create_session_token(
+    pool: &PgPool,
+    user: &User,
+    config: &crate::config::Config,
+) -> Result<String, anyhow::Error> {
     // Generate JWT token
     let claims = Claims {
         sub: user.id.to_string(),
@@ -241,7 +252,11 @@ async fn create_session_token(pool: &PgPool, user: &User, config: &crate::config
     Ok(token)
 }
 
-pub async fn verify_token(token: &str, pool: &PgPool, jwt_secret: &str) -> Result<User, anyhow::Error> {
+pub async fn verify_token(
+    token: &str,
+    pool: &PgPool,
+    jwt_secret: &str,
+) -> Result<User, anyhow::Error> {
     // Verify JWT
     let token_data = decode::<Claims>(
         token,
@@ -303,38 +318,26 @@ pub async fn google_authorize(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // Check if Google OAuth is configured
-    let client_id = state
-        .config
-        .google_client_id
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Google OAuth is not configured")),
-            )
-        })?;
+    let client_id = state.config.google_client_id.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Google OAuth is not configured")),
+        )
+    })?;
 
-    let client_secret = state
-        .config
-        .google_client_secret
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Google OAuth is not configured")),
-            )
-        })?;
+    let client_secret = state.config.google_client_secret.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Google OAuth is not configured")),
+        )
+    })?;
 
-    let redirect_url = state
-        .config
-        .google_redirect_url
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Google OAuth is not configured")),
-            )
-        })?;
+    let redirect_url = state.config.google_redirect_url.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Google OAuth is not configured")),
+        )
+    })?;
 
     let client = get_google_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
         tracing::error!("Failed to create OAuth client: {}", e);
@@ -360,38 +363,26 @@ pub async fn google_callback(
     Query(query): Query<OAuthCallbackQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // Check if Google OAuth is configured
-    let client_id = state
-        .config
-        .google_client_id
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Google OAuth is not configured")),
-            )
-        })?;
+    let client_id = state.config.google_client_id.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Google OAuth is not configured")),
+        )
+    })?;
 
-    let client_secret = state
-        .config
-        .google_client_secret
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Google OAuth is not configured")),
-            )
-        })?;
+    let client_secret = state.config.google_client_secret.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Google OAuth is not configured")),
+        )
+    })?;
 
-    let redirect_url = state
-        .config
-        .google_redirect_url
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Google OAuth is not configured")),
-            )
-        })?;
+    let redirect_url = state.config.google_redirect_url.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Google OAuth is not configured")),
+        )
+    })?;
 
     let client = get_google_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
         tracing::error!("Failed to create OAuth client: {}", e);
@@ -603,38 +594,26 @@ pub async fn github_authorize(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // Check if GitHub OAuth is configured
-    let client_id = state
-        .config
-        .github_client_id
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("GitHub OAuth is not configured")),
-            )
-        })?;
+    let client_id = state.config.github_client_id.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("GitHub OAuth is not configured")),
+        )
+    })?;
 
-    let client_secret = state
-        .config
-        .github_client_secret
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("GitHub OAuth is not configured")),
-            )
-        })?;
+    let client_secret = state.config.github_client_secret.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("GitHub OAuth is not configured")),
+        )
+    })?;
 
-    let redirect_url = state
-        .config
-        .github_redirect_url
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("GitHub OAuth is not configured")),
-            )
-        })?;
+    let redirect_url = state.config.github_redirect_url.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("GitHub OAuth is not configured")),
+        )
+    })?;
 
     let client = get_github_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
         tracing::error!("Failed to create OAuth client: {}", e);
@@ -658,38 +637,26 @@ pub async fn github_callback(
     Query(query): Query<OAuthCallbackQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // Check if GitHub OAuth is configured
-    let client_id = state
-        .config
-        .github_client_id
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("GitHub OAuth is not configured")),
-            )
-        })?;
+    let client_id = state.config.github_client_id.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("GitHub OAuth is not configured")),
+        )
+    })?;
 
-    let client_secret = state
-        .config
-        .github_client_secret
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("GitHub OAuth is not configured")),
-            )
-        })?;
+    let client_secret = state.config.github_client_secret.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("GitHub OAuth is not configured")),
+        )
+    })?;
 
-    let redirect_url = state
-        .config
-        .github_redirect_url
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("GitHub OAuth is not configured")),
-            )
-        })?;
+    let redirect_url = state.config.github_redirect_url.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("GitHub OAuth is not configured")),
+        )
+    })?;
 
     let client = get_github_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
         tracing::error!("Failed to create OAuth client: {}", e);
@@ -754,7 +721,9 @@ pub async fn github_callback(
                 tracing::error!("Failed to fetch user emails: {}", e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ErrorResponse::new("Failed to fetch user emails from GitHub")),
+                    Json(ErrorResponse::new(
+                        "Failed to fetch user emails from GitHub",
+                    )),
                 )
             })?;
 
@@ -762,7 +731,9 @@ pub async fn github_callback(
             tracing::error!("Failed to parse user emails: {}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse::new("Failed to parse user emails from GitHub")),
+                Json(ErrorResponse::new(
+                    "Failed to parse user emails from GitHub",
+                )),
             )
         })?;
 
@@ -859,7 +830,9 @@ pub async fn github_callback(
             user
         } else {
             // Create new user
-            let full_name = github_user.name.as_ref()
+            let full_name = github_user
+                .name
+                .as_ref()
                 .unwrap_or(&github_user.login)
                 .clone();
 
@@ -956,38 +929,26 @@ pub async fn apple_authorize(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // Check if Apple OAuth is configured
-    let client_id = state
-        .config
-        .apple_client_id
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Apple OAuth is not configured")),
-            )
-        })?;
+    let client_id = state.config.apple_client_id.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Apple OAuth is not configured")),
+        )
+    })?;
 
-    let client_secret = state
-        .config
-        .apple_private_key
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Apple OAuth is not configured")),
-            )
-        })?;
+    let client_secret = state.config.apple_private_key.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Apple OAuth is not configured")),
+        )
+    })?;
 
-    let redirect_url = state
-        .config
-        .apple_redirect_url
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Apple OAuth is not configured")),
-            )
-        })?;
+    let redirect_url = state.config.apple_redirect_url.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Apple OAuth is not configured")),
+        )
+    })?;
 
     let client = get_apple_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
         tracing::error!("Failed to create OAuth client: {}", e);
@@ -1012,38 +973,26 @@ pub async fn apple_callback(
     Query(query): Query<OAuthCallbackQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // Check if Apple OAuth is configured
-    let client_id = state
-        .config
-        .apple_client_id
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Apple OAuth is not configured")),
-            )
-        })?;
+    let client_id = state.config.apple_client_id.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Apple OAuth is not configured")),
+        )
+    })?;
 
-    let client_secret = state
-        .config
-        .apple_private_key
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Apple OAuth is not configured")),
-            )
-        })?;
+    let client_secret = state.config.apple_private_key.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Apple OAuth is not configured")),
+        )
+    })?;
 
-    let redirect_url = state
-        .config
-        .apple_redirect_url
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Apple OAuth is not configured")),
-            )
-        })?;
+    let redirect_url = state.config.apple_redirect_url.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Apple OAuth is not configured")),
+        )
+    })?;
 
     let client = get_apple_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
         tracing::error!("Failed to create OAuth client: {}", e);
@@ -1067,17 +1016,21 @@ pub async fn apple_callback(
         })?;
 
     // Parse user data if provided (first-time login)
-    let user_data: Option<AppleUserData> = query.user.as_ref().and_then(|u| {
-        serde_json::from_str(u).ok()
-    });
+    let user_data: Option<AppleUserData> = query
+        .user
+        .as_ref()
+        .and_then(|u| serde_json::from_str(u).ok());
 
     // Get email from user data - Apple only sends this on first authorization
-    let email = user_data.as_ref()
+    let email = user_data
+        .as_ref()
         .and_then(|d| d.email.clone())
         .ok_or_else(|| {
             (
                 StatusCode::BAD_REQUEST,
-                Json(ErrorResponse::new("Email required for first-time Apple sign-in. Please try again.")),
+                Json(ErrorResponse::new(
+                    "Email required for first-time Apple sign-in. Please try again.",
+                )),
             )
         })?;
 
@@ -1158,15 +1111,20 @@ pub async fn apple_callback(
             user
         } else {
             // Create new user
-            let full_name = user_data.as_ref().and_then(|d| {
-                d.name.as_ref().map(|n| {
-                    format!(
-                        "{} {}",
-                        n.first_name.as_deref().unwrap_or(""),
-                        n.last_name.as_deref().unwrap_or("")
-                    ).trim().to_string()
+            let full_name = user_data
+                .as_ref()
+                .and_then(|d| {
+                    d.name.as_ref().map(|n| {
+                        format!(
+                            "{} {}",
+                            n.first_name.as_deref().unwrap_or(""),
+                            n.last_name.as_deref().unwrap_or("")
+                        )
+                        .trim()
+                        .to_string()
+                    })
                 })
-            }).unwrap_or_else(|| email.split('@').next().unwrap_or("User").to_string());
+                .unwrap_or_else(|| email.split('@').next().unwrap_or("User").to_string());
 
             let new_user = sqlx::query_as::<_, User>(
                 r#"
@@ -1241,7 +1199,8 @@ fn get_facebook_oauth_client(
     let facebook_client_id = ClientId::new(client_id.to_string());
     let facebook_client_secret = ClientSecret::new(client_secret.to_string());
     let auth_url = AuthUrl::new("https://www.facebook.com/v18.0/dialog/oauth".to_string())?;
-    let token_url = TokenUrl::new("https://graph.facebook.com/v18.0/oauth/access_token".to_string())?;
+    let token_url =
+        TokenUrl::new("https://graph.facebook.com/v18.0/oauth/access_token".to_string())?;
 
     Ok(BasicClient::new(
         facebook_client_id,
@@ -1256,16 +1215,12 @@ pub async fn facebook_authorize(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // Check if Facebook OAuth is configured
-    let client_id = state
-        .config
-        .facebook_client_id
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Facebook OAuth is not configured")),
-            )
-        })?;
+    let client_id = state.config.facebook_client_id.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Facebook OAuth is not configured")),
+        )
+    })?;
 
     let client_secret = state
         .config
@@ -1278,24 +1233,21 @@ pub async fn facebook_authorize(
             )
         })?;
 
-    let redirect_url = state
-        .config
-        .facebook_redirect_url
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Facebook OAuth is not configured")),
-            )
-        })?;
-
-    let client = get_facebook_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
-        tracing::error!("Failed to create OAuth client: {}", e);
+    let redirect_url = state.config.facebook_redirect_url.as_ref().ok_or_else(|| {
         (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse::new("OAuth configuration error")),
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Facebook OAuth is not configured")),
         )
     })?;
+
+    let client =
+        get_facebook_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
+            tracing::error!("Failed to create OAuth client: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("OAuth configuration error")),
+            )
+        })?;
 
     // Generate the authorization URL
     let (authorize_url, _csrf_token) = client
@@ -1312,16 +1264,12 @@ pub async fn facebook_callback(
     Query(query): Query<OAuthCallbackQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
     // Check if Facebook OAuth is configured
-    let client_id = state
-        .config
-        .facebook_client_id
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Facebook OAuth is not configured")),
-            )
-        })?;
+    let client_id = state.config.facebook_client_id.as_ref().ok_or_else(|| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Facebook OAuth is not configured")),
+        )
+    })?;
 
     let client_secret = state
         .config
@@ -1334,24 +1282,21 @@ pub async fn facebook_callback(
             )
         })?;
 
-    let redirect_url = state
-        .config
-        .facebook_redirect_url
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse::new("Facebook OAuth is not configured")),
-            )
-        })?;
-
-    let client = get_facebook_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
-        tracing::error!("Failed to create OAuth client: {}", e);
+    let redirect_url = state.config.facebook_redirect_url.as_ref().ok_or_else(|| {
         (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse::new("OAuth configuration error")),
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse::new("Facebook OAuth is not configured")),
         )
     })?;
+
+    let client =
+        get_facebook_oauth_client(client_id, client_secret, redirect_url).map_err(|e| {
+            tracing::error!("Failed to create OAuth client: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::new("OAuth configuration error")),
+            )
+        })?;
 
     // Exchange the code for an access token
     let token_result = client
@@ -1379,7 +1324,9 @@ pub async fn facebook_callback(
             tracing::error!("Failed to fetch user info: {}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse::new("Failed to fetch user info from Facebook")),
+                Json(ErrorResponse::new(
+                    "Failed to fetch user info from Facebook",
+                )),
             )
         })?;
 
@@ -1387,7 +1334,9 @@ pub async fn facebook_callback(
         tracing::error!("Failed to parse user info: {}", e);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse::new("Failed to parse user info from Facebook")),
+            Json(ErrorResponse::new(
+                "Failed to parse user info from Facebook",
+            )),
         )
     })?;
 
@@ -1395,7 +1344,9 @@ pub async fn facebook_callback(
     let email = facebook_user.email.ok_or_else(|| {
         (
             StatusCode::BAD_REQUEST,
-            Json(ErrorResponse::new("Email permission required for Facebook login")),
+            Json(ErrorResponse::new(
+                "Email permission required for Facebook login",
+            )),
         )
     })?;
 
@@ -1474,7 +1425,8 @@ pub async fn facebook_callback(
             user
         } else {
             // Create new user
-            let full_name = facebook_user.name
+            let full_name = facebook_user
+                .name
                 .as_ref()
                 .unwrap_or(&email.split('@').next().unwrap_or("User").to_string())
                 .clone();
@@ -1567,16 +1519,12 @@ fn get_linkedin_oauth_client(
 pub async fn linkedin_authorize(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let linkedin_client_id = state
-        .config
-        .linkedin_client_id
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse::new("LinkedIn OAuth not configured")),
-            )
-        })?;
+    let linkedin_client_id = state.config.linkedin_client_id.as_ref().ok_or_else(|| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("LinkedIn OAuth not configured")),
+        )
+    })?;
 
     let linkedin_client_secret = state
         .config
@@ -1589,16 +1537,12 @@ pub async fn linkedin_authorize(
             )
         })?;
 
-    let linkedin_redirect_url = state
-        .config
-        .linkedin_redirect_url
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse::new("LinkedIn OAuth not configured")),
-            )
-        })?;
+    let linkedin_redirect_url = state.config.linkedin_redirect_url.as_ref().ok_or_else(|| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("LinkedIn OAuth not configured")),
+        )
+    })?;
 
     let client = get_linkedin_oauth_client(
         linkedin_client_id,
@@ -1629,16 +1573,12 @@ pub async fn linkedin_callback(
     State(state): State<AppState>,
     Query(query): Query<OAuthCallbackQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    let linkedin_client_id = state
-        .config
-        .linkedin_client_id
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse::new("LinkedIn OAuth not configured")),
-            )
-        })?;
+    let linkedin_client_id = state.config.linkedin_client_id.as_ref().ok_or_else(|| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("LinkedIn OAuth not configured")),
+        )
+    })?;
 
     let linkedin_client_secret = state
         .config
@@ -1651,16 +1591,12 @@ pub async fn linkedin_callback(
             )
         })?;
 
-    let linkedin_redirect_url = state
-        .config
-        .linkedin_redirect_url
-        .as_ref()
-        .ok_or_else(|| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse::new("LinkedIn OAuth not configured")),
-            )
-        })?;
+    let linkedin_redirect_url = state.config.linkedin_redirect_url.as_ref().ok_or_else(|| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ErrorResponse::new("LinkedIn OAuth not configured")),
+        )
+    })?;
 
     let client = get_linkedin_oauth_client(
         linkedin_client_id,
@@ -1853,7 +1789,10 @@ pub async fn linkedin_callback(
     .map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse::new(format!("Failed to generate token: {}", e))),
+            Json(ErrorResponse::new(format!(
+                "Failed to generate token: {}",
+                e
+            ))),
         )
     })?;
 
@@ -1872,7 +1811,10 @@ pub async fn linkedin_callback(
     .map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse::new(format!("Failed to create session: {}", e))),
+            Json(ErrorResponse::new(format!(
+                "Failed to create session: {}",
+                e
+            ))),
         )
     })?;
 

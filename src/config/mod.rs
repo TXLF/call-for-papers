@@ -78,37 +78,36 @@ impl Config {
         dotenvy::dotenv().ok();
 
         // Try to load from config file, fallback to defaults if not found
-        let file_config = Self::load_file_config("config.toml")
-            .or_else(|_| Self::load_default_config())?;
+        let file_config =
+            Self::load_file_config("config.toml").or_else(|_| Self::load_default_config())?;
 
         // Load environment variables (these take precedence)
-        let database_url = std::env::var("DATABASE_URL")
-            .unwrap_or_else(|_| {
-                if file_config.database.url.is_empty() {
-                    "postgres://postgres:postgres@localhost/call_for_papers".to_string()
-                } else {
-                    file_config.database.url.clone()
-                }
-            });
+        let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+            if file_config.database.url.is_empty() {
+                "postgres://postgres:postgres@localhost/call_for_papers".to_string()
+            } else {
+                file_config.database.url.clone()
+            }
+        });
 
-        let server_host = std::env::var("SERVER_HOST")
-            .unwrap_or_else(|_| file_config.server.host.clone());
+        let server_host =
+            std::env::var("SERVER_HOST").unwrap_or_else(|_| file_config.server.host.clone());
 
         let server_port = std::env::var("SERVER_PORT")
             .ok()
             .and_then(|p| p.parse().ok())
             .unwrap_or(file_config.server.port);
 
-        let jwt_secret = std::env::var("JWT_SECRET")
-            .expect("JWT_SECRET must be set in environment variables");
+        let jwt_secret =
+            std::env::var("JWT_SECRET").expect("JWT_SECRET must be set in environment variables");
 
         let jwt_expiry_hours = std::env::var("JWT_EXPIRY_HOURS")
             .ok()
             .and_then(|h| h.parse().ok())
             .unwrap_or(file_config.security.jwt_expiry_hours);
 
-        let upload_dir = std::env::var("UPLOAD_DIR")
-            .unwrap_or_else(|_| file_config.uploads.directory.clone());
+        let upload_dir =
+            std::env::var("UPLOAD_DIR").unwrap_or_else(|_| file_config.uploads.directory.clone());
 
         // OAuth configuration
         let google_client_id = std::env::var("GOOGLE_CLIENT_ID").ok();
@@ -262,7 +261,10 @@ mod tests {
         let config = Config::load_default_config().unwrap();
         assert_eq!(config.submission.min_title_length, 5);
         assert_eq!(config.submission.max_title_length, 200);
-        assert!(config.submission.allowed_slide_formats.contains(&"pdf".to_string()));
+        assert!(config
+            .submission
+            .allowed_slide_formats
+            .contains(&"pdf".to_string()));
     }
 
     #[test]
@@ -270,7 +272,10 @@ mod tests {
         let config = Config::load_default_config().unwrap();
         assert!(!config.labels.default_labels.is_empty());
         assert!(config.labels.default_labels.contains(&"Linux".to_string()));
-        assert!(config.labels.default_labels.contains(&"Open Source".to_string()));
+        assert!(config
+            .labels
+            .default_labels
+            .contains(&"Open Source".to_string()));
     }
 
     #[test]

@@ -28,22 +28,22 @@ pub async fn auth_middleware(
             )
         })?;
 
-    let token = auth_header
-        .strip_prefix("Bearer ")
-        .ok_or_else(|| {
-            (
-                StatusCode::UNAUTHORIZED,
-                Json(ErrorResponse::new("Invalid authorization header format")),
-            )
-        })?;
-
-    let user = verify_token(token, &state.db, &state.config.jwt_secret).await.map_err(|e| {
-        tracing::error!("Token verification failed: {}", e);
+    let token = auth_header.strip_prefix("Bearer ").ok_or_else(|| {
         (
             StatusCode::UNAUTHORIZED,
-            Json(ErrorResponse::new("Invalid or expired token")),
+            Json(ErrorResponse::new("Invalid authorization header format")),
         )
     })?;
+
+    let user = verify_token(token, &state.db, &state.config.jwt_secret)
+        .await
+        .map_err(|e| {
+            tracing::error!("Token verification failed: {}", e);
+            (
+                StatusCode::UNAUTHORIZED,
+                Json(ErrorResponse::new("Invalid or expired token")),
+            )
+        })?;
 
     // Add user to request extensions so handlers can access it
     req.extensions_mut().insert(user);
@@ -55,15 +55,12 @@ pub async fn organizer_middleware(
     req: Request,
     next: Next,
 ) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    let user = req
-        .extensions()
-        .get::<User>()
-        .ok_or_else(|| {
-            (
-                StatusCode::UNAUTHORIZED,
-                Json(ErrorResponse::new("Authentication required")),
-            )
-        })?;
+    let user = req.extensions().get::<User>().ok_or_else(|| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(ErrorResponse::new("Authentication required")),
+        )
+    })?;
 
     if !user.is_organizer {
         return Err((

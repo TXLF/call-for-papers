@@ -14,7 +14,10 @@ async fn create_organizer_user(
         "postgres://postgres:postgres@localhost/call_for_papers_test".to_string()
     });
 
-    let pool = PgPoolOptions::new().max_connections(1).connect(&db_url).await?;
+    let pool = PgPoolOptions::new()
+        .max_connections(1)
+        .connect(&db_url)
+        .await?;
 
     // Use the same password hashing from the application
     let password_hash = bcrypt::hash(password, bcrypt::DEFAULT_COST)?;
@@ -40,7 +43,9 @@ async fn create_organizer_user(
 #[ignore] // Requires WebDriver and running application
 async fn test_organizer_login_and_view_dashboard() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     // Create organizer user
     create_organizer_user(
@@ -67,10 +72,7 @@ async fn test_organizer_login_and_view_dashboard() {
         .expect("Failed to navigate to organizer dashboard");
 
     // Verify organizer-specific elements are present
-    let title = ctx
-        .text("h1")
-        .await
-        .expect("Failed to get page heading");
+    let title = ctx.text("h1").await.expect("Failed to get page heading");
 
     assert!(
         title.contains("Organizer") || title.contains("Dashboard"),
@@ -78,14 +80,18 @@ async fn test_organizer_login_and_view_dashboard() {
     );
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }
 
 #[tokio::test]
 #[ignore]
 async fn test_organizer_view_all_talks() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     // Create organizer
     create_organizer_user(
@@ -161,14 +167,18 @@ async fn test_organizer_view_all_talks() {
     assert_eq!(talk_title, "Test Talk for Review");
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }
 
 #[tokio::test]
 #[ignore]
 async fn test_organizer_rate_talk() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     // Create organizer
     create_organizer_user(
@@ -228,9 +238,7 @@ async fn test_organizer_rate_talk() {
         .expect("Failed to navigate to talks");
 
     // Click on talk to view details
-    ctx.click(".talk-item")
-        .await
-        .expect("Failed to click talk");
+    ctx.click(".talk-item").await.expect("Failed to click talk");
 
     // Wait for rating form
     ctx.wait_for(".rating-form", 5)
@@ -266,14 +274,18 @@ async fn test_organizer_rate_talk() {
     assert!(rating_display.contains("5") || rating_display.contains("★"));
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }
 
 #[tokio::test]
 #[ignore]
 async fn test_organizer_add_label_to_talk() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     // Create organizer
     create_organizer_user(
@@ -360,9 +372,7 @@ async fn test_organizer_add_label_to_talk() {
         .await
         .expect("Failed to navigate to talks");
 
-    ctx.click(".talk-item")
-        .await
-        .expect("Failed to click talk");
+    ctx.click(".talk-item").await.expect("Failed to click talk");
 
     // Add label to talk
     ctx.click(".add-label-button")
@@ -386,14 +396,18 @@ async fn test_organizer_add_label_to_talk() {
     assert!(labels.len() > 0, "Should have at least one label");
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }
 
 #[tokio::test]
 #[ignore]
 async fn test_organizer_change_talk_state() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     // Create organizer
     create_organizer_user(
@@ -452,9 +466,7 @@ async fn test_organizer_change_talk_state() {
         .await
         .expect("Failed to navigate to talks");
 
-    ctx.click(".talk-item")
-        .await
-        .expect("Failed to click talk");
+    ctx.click(".talk-item").await.expect("Failed to click talk");
 
     // Change state to pending
     ctx.wait_for(".state-selector", 5)
@@ -486,14 +498,18 @@ async fn test_organizer_change_talk_state() {
     );
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }
 
 #[tokio::test]
 #[ignore]
 async fn test_organizer_create_schedule() {
     setup_database().await.expect("Failed to setup database");
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 
     // Create organizer
     create_organizer_user(
@@ -561,5 +577,7 @@ async fn test_organizer_create_schedule() {
     assert_eq!(conference_title, "TXLF 2025");
 
     ctx.cleanup().await;
-    cleanup_database().await.expect("Failed to cleanup database");
+    cleanup_database()
+        .await
+        .expect("Failed to cleanup database");
 }

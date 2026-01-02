@@ -7,9 +7,7 @@ use uuid::Uuid;
 
 use crate::{
     api::AppState,
-    models::{
-        auth::ErrorResponse, CreateTrackRequest, Track, TrackResponse, UpdateTrackRequest,
-    },
+    models::{auth::ErrorResponse, CreateTrackRequest, Track, TrackResponse, UpdateTrackRequest},
 };
 
 /// List all tracks (public endpoint)
@@ -178,7 +176,11 @@ pub async fn update_track(
     }
 
     // Update the track
-    let name = payload.name.as_ref().map(|s| s.trim()).unwrap_or(&existing_track.name);
+    let name = payload
+        .name
+        .as_ref()
+        .map(|s| s.trim())
+        .unwrap_or(&existing_track.name);
     let description = payload
         .description
         .as_ref()
@@ -208,7 +210,11 @@ pub async fn update_track(
         )
     })?;
 
-    tracing::info!("Track updated: {} ({})", updated_track.name, updated_track.id);
+    tracing::info!(
+        "Track updated: {} ({})",
+        updated_track.name,
+        updated_track.id
+    );
     Ok(Json(TrackResponse::from(updated_track)))
 }
 

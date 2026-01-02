@@ -1,17 +1,9 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use uuid::Uuid;
 
-use crate::{
-    api::AppState,
-    models::talk::TalkState,
-    services::email::EmailVariables,
-};
+use crate::{api::AppState, models::talk::TalkState, services::email::EmailVariables};
 
 #[derive(Debug, Deserialize)]
 pub struct BulkEmailRequest {
@@ -101,12 +93,7 @@ pub async fn send_bulk_email(
             .bind(template_id)
             .fetch_one(&state.db)
             .await
-            .map_err(|e| {
-                (
-                    StatusCode::NOT_FOUND,
-                    format!("Template not found: {}", e),
-                )
-            })?;
+            .map_err(|e| (StatusCode::NOT_FOUND, format!("Template not found: {}", e)))?;
 
             subject = template.subject.clone();
             body = template.body.clone();
@@ -129,10 +116,7 @@ pub async fn send_bulk_email(
         };
 
         // Render subject and body with variables
-        let rendered_subject = match state
-            .email_service
-            .render_template(&subject, &variables)
-        {
+        let rendered_subject = match state.email_service.render_template(&subject, &variables) {
             Ok(s) => s,
             Err(e) => {
                 errors.push(format!(

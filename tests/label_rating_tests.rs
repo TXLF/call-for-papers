@@ -620,23 +620,27 @@ async fn test_list_ratings_for_talk() {
     let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
     // Create ratings
-    sqlx::query("INSERT INTO ratings (talk_id, organizer_id, score, notes) VALUES ($1, $2, $3, $4)")
-        .bind(talk_id)
-        .bind(organizer1_id)
-        .bind(5)
-        .bind("Great")
-        .execute(&ctx.db)
-        .await
-        .unwrap();
+    sqlx::query(
+        "INSERT INTO ratings (talk_id, organizer_id, score, notes) VALUES ($1, $2, $3, $4)",
+    )
+    .bind(talk_id)
+    .bind(organizer1_id)
+    .bind(5)
+    .bind("Great")
+    .execute(&ctx.db)
+    .await
+    .unwrap();
 
-    sqlx::query("INSERT INTO ratings (talk_id, organizer_id, score, notes) VALUES ($1, $2, $3, $4)")
-        .bind(talk_id)
-        .bind(organizer2_id)
-        .bind(4)
-        .bind("Good")
-        .execute(&ctx.db)
-        .await
-        .unwrap();
+    sqlx::query(
+        "INSERT INTO ratings (talk_id, organizer_id, score, notes) VALUES ($1, $2, $3, $4)",
+    )
+    .bind(talk_id)
+    .bind(organizer2_id)
+    .bind(4)
+    .bind("Good")
+    .execute(&ctx.db)
+    .await
+    .unwrap();
 
     let token = generate_test_token(organizer1_id, "organizer1@example.com", true);
 

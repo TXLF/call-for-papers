@@ -149,8 +149,15 @@ pub async fn create_conference(
         )
     })?;
 
-    tracing::info!("Conference created: {} ({})", conference.name, conference.id);
-    Ok((StatusCode::CREATED, Json(ConferenceResponse::from(conference))))
+    tracing::info!(
+        "Conference created: {} ({})",
+        conference.name,
+        conference.id
+    );
+    Ok((
+        StatusCode::CREATED,
+        Json(ConferenceResponse::from(conference)),
+    ))
 }
 
 /// Update a conference (organizer only)
