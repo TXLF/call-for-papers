@@ -394,7 +394,7 @@ async fn test_organizer_add_label_to_talk() {
         .await
         .expect("Failed to find talk labels");
 
-    assert!(labels.len() > 0, "Should have at least one label");
+    assert!(!labels.is_empty(), "Should have at least one label");
 
     ctx.cleanup().await;
     cleanup_database()
