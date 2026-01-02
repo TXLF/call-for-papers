@@ -28,7 +28,7 @@ pub use schedule_slot::{
 };
 pub use talk::{
     ChangeStateRequest, CreateTalkRequest, RespondToTalkRequest, Talk, TalkAction, TalkResponse,
-    TalkState, UpdateTalkRequest,
+    TalkState, TalksListResponse, UpdateTalkRequest,
 };
 pub use track::{CreateTrackRequest, Track, TrackResponse, UpdateTrackRequest};
 pub use user::User;

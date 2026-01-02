@@ -136,3 +136,8 @@ impl TalkResponse {
         self
     }
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TalksListResponse {
+    pub talks: Vec<TalkResponse>,
+}

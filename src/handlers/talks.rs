@@ -12,7 +12,8 @@ use crate::{
     api::AppState,
     models::{
         auth::ErrorResponse, ChangeStateRequest, CreateTalkRequest, Label, LabelResponse,
-        RespondToTalkRequest, Talk, TalkAction, TalkResponse, TalkState, UpdateTalkRequest, User,
+        RespondToTalkRequest, Talk, TalkAction, TalkResponse, TalkState, TalksListResponse,
+        UpdateTalkRequest, User,
     },
 };
 
@@ -124,7 +125,7 @@ pub async fn create_talk(
 pub async fn get_my_talks(
     State(state): State<AppState>,
     Extension(user): Extension<User>,
-) -> Result<Json<Vec<TalkResponse>>, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<Json<TalksListResponse>, (StatusCode, Json<ErrorResponse>)> {
     let talks = sqlx::query_as::<_, Talk>(
         r#"
         SELECT * FROM talks
@@ -152,7 +153,7 @@ pub async fn get_my_talks(
         responses.push(TalkResponse::from(talk).with_labels(labels));
     }
 
-    Ok(Json(responses))
+    Ok(Json(TalksListResponse { talks: responses }))
 }
 
 /// Get a single talk by ID
@@ -757,7 +758,7 @@ pub async fn change_talk_state(
 pub async fn list_all_talks(
     State(state): State<AppState>,
     Query(query): Query<ListTalksQuery>,
-) -> Result<Json<Vec<TalkResponse>>, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<Json<TalksListResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Build query with optional state filtering
     let talks = if let Some(state_filter) = query.state {
         // Parse the state filter
@@ -838,5 +839,5 @@ pub async fn list_all_talks(
         responses.push(response);
     }
 
-    Ok(Json(responses))
+    Ok(Json(TalksListResponse { talks: responses }))
 }
