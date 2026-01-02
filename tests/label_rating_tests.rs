@@ -25,7 +25,7 @@ async fn test_create_label_as_organizer() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("POST")
@@ -66,7 +66,7 @@ async fn test_create_label_requires_organizer() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("POST")
@@ -109,7 +109,7 @@ async fn test_list_labels() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")
@@ -145,7 +145,7 @@ async fn test_update_label_as_organizer() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("PUT")
@@ -187,7 +187,7 @@ async fn test_delete_label_as_organizer() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("DELETE")
@@ -232,7 +232,7 @@ async fn test_add_label_to_talk() {
 
     let talk_id = create_test_talk(&ctx.db, speaker_id, "Rust Talk", "Learn Rust").await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("POST")
@@ -291,7 +291,7 @@ async fn test_remove_label_from_talk() {
         .await
         .unwrap();
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("DELETE")
@@ -338,7 +338,7 @@ async fn test_create_rating_as_organizer() {
 
     let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("POST")
@@ -381,7 +381,7 @@ async fn test_create_rating_requires_organizer() {
 
     let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
-    let token = generate_test_token(speaker_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, speaker_id, "speaker@example.com", false).await;
 
     let req = Request::builder()
         .method("POST")
@@ -443,7 +443,7 @@ async fn test_update_rating() {
     .await
     .unwrap();
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("PUT")
@@ -518,7 +518,7 @@ async fn test_update_rating_only_own() {
     .unwrap();
 
     // Try to update with organizer2's token
-    let token = generate_test_token(organizer2_id, "organizer2@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer2_id, "organizer2@example.com", true).await;
 
     let req = Request::builder()
         .method("PUT")
@@ -580,7 +580,7 @@ async fn test_delete_rating() {
     .await
     .unwrap();
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("DELETE")
@@ -656,7 +656,7 @@ async fn test_list_ratings_for_talk() {
     .await
     .unwrap();
 
-    let token = generate_test_token(organizer1_id, "organizer1@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer1_id, "organizer1@example.com", true).await;
 
     let req = Request::builder()
         .method("GET")
@@ -693,7 +693,7 @@ async fn test_list_ratings_requires_organizer() {
 
     let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
-    let token = generate_test_token(speaker_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, speaker_id, "speaker@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")

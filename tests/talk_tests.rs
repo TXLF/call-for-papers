@@ -22,7 +22,7 @@ async fn test_create_talk_success() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "speaker@example.com", false).await;
 
     let req = Request::builder()
         .method("POST")
@@ -95,7 +95,7 @@ async fn test_create_talk_missing_required_fields() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "speaker@example.com", false).await;
 
     // Missing short_summary
     let req = Request::builder()
@@ -138,7 +138,7 @@ async fn test_list_my_talks() {
 
     create_test_talk(&ctx.db, user_id, "Talk 2", "Summary 2").await;
 
-    let token = generate_test_token(user_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "speaker@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")
@@ -174,7 +174,7 @@ async fn test_get_talk_by_id() {
 
     let talk_id = create_test_talk(&ctx.db, user_id, "Test Talk", "Test Summary").await;
 
-    let token = generate_test_token(user_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "speaker@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")
@@ -210,7 +210,7 @@ async fn test_update_talk() {
 
     let talk_id = create_test_talk(&ctx.db, user_id, "Original Title", "Original Summary").await;
 
-    let token = generate_test_token(user_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "speaker@example.com", false).await;
 
     let req = Request::builder()
         .method("PUT")
@@ -266,7 +266,7 @@ async fn test_update_talk_unauthorized() {
     )
     .await;
 
-    let token = generate_test_token(user2_id, "speaker2@example.com", false);
+    let token = generate_test_token(&ctx.db, user2_id, "speaker2@example.com", false).await;
 
     let req = Request::builder()
         .method("PUT")
@@ -306,7 +306,7 @@ async fn test_delete_talk() {
 
     let talk_id = create_test_talk(&ctx.db, user_id, "Talk to Delete", "Summary").await;
 
-    let token = generate_test_token(user_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "speaker@example.com", false).await;
 
     let req = Request::builder()
         .method("DELETE")
@@ -373,7 +373,7 @@ async fn test_list_all_talks_as_organizer() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("GET")
@@ -408,7 +408,7 @@ async fn test_list_all_talks_requires_organizer() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")
@@ -453,7 +453,7 @@ async fn test_change_talk_state_as_organizer() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     // Change state to pending
     let req = Request::builder()
@@ -495,7 +495,7 @@ async fn test_change_talk_state_requires_organizer() {
 
     let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
-    let token = generate_test_token(speaker_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, speaker_id, "speaker@example.com", false).await;
 
     // Try to change state as speaker (should fail)
     let req = Request::builder()
@@ -543,7 +543,7 @@ async fn test_respond_to_talk() {
         .await
         .unwrap();
 
-    let token = generate_test_token(speaker_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, speaker_id, "speaker@example.com", false).await;
 
     // Accept the talk
     let req = Request::builder()
@@ -592,7 +592,7 @@ async fn test_respond_to_talk_reject() {
         .await
         .unwrap();
 
-    let token = generate_test_token(speaker_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, speaker_id, "speaker@example.com", false).await;
 
     // Decline the talk
     let req = Request::builder()
@@ -635,7 +635,7 @@ async fn test_respond_to_talk_wrong_state() {
     let talk_id = create_test_talk(&ctx.db, speaker_id, "Test Talk", "Test Summary").await;
 
     // Talk is in 'submitted' state, not 'pending'
-    let token = generate_test_token(speaker_id, "speaker@example.com", false);
+    let token = generate_test_token(&ctx.db, speaker_id, "speaker@example.com", false).await;
 
     let req = Request::builder()
         .method("POST")

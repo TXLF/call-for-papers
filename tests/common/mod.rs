@@ -182,8 +182,13 @@ pub async fn create_test_user(
     user_id
 }
 
-/// Generate JWT token for a user
-pub fn generate_test_token(user_id: uuid::Uuid, email: &str, is_organizer: bool) -> String {
+/// Generate JWT token for a user and create a session
+pub async fn generate_test_token(
+    db: &PgPool,
+    user_id: uuid::Uuid,
+    email: &str,
+    is_organizer: bool,
+) -> String {
     use jsonwebtoken::{encode, EncodingKey, Header};
     use serde::{Deserialize, Serialize};
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -212,12 +217,27 @@ pub fn generate_test_token(user_id: uuid::Uuid, email: &str, is_organizer: bool)
 
     let secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "test_jwt_secret".to_string());
 
-    encode(
+    let token = encode(
         &Header::default(),
         &claims,
         &EncodingKey::from_secret(secret.as_bytes()),
     )
-    .expect("Failed to generate token")
+    .expect("Failed to generate token");
+
+    // Create session in database
+    sqlx::query(
+        r#"
+        INSERT INTO sessions (user_id, token, expires_at)
+        VALUES ($1, $2, NOW() + INTERVAL '1 hour')
+        "#,
+    )
+    .bind(user_id)
+    .bind(&token)
+    .execute(db)
+    .await
+    .expect("Failed to create session");
+
+    token
 }
 
 /// Create a test label
@@ -324,10 +344,21 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn test_generate_test_token() {
-        let user_id = uuid::Uuid::new_v4();
-        let token = generate_test_token(user_id, "test@example.com", false);
+        let ctx = TestContext::new().await;
+        let user_id = create_test_user(
+            &ctx.db,
+            "test@example.com",
+            "testuser",
+            "password123",
+            "Test User",
+            false,
+        )
+        .await;
+        let token = generate_test_token(&ctx.db, user_id, "test@example.com", false).await;
         assert!(!token.is_empty());
         assert!(token.starts_with("eyJ"));
+        ctx.cleanup().await;
     }
 }

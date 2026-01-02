@@ -25,7 +25,7 @@ async fn test_create_conference_as_organizer() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("POST")
@@ -71,7 +71,7 @@ async fn test_create_conference_requires_organizer() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("POST")
@@ -115,7 +115,7 @@ async fn test_list_conferences() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")
@@ -151,7 +151,7 @@ async fn test_get_conference_by_id() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")
@@ -186,7 +186,7 @@ async fn test_update_conference() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("PUT")
@@ -237,7 +237,7 @@ async fn test_create_track_as_organizer() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("POST")
@@ -281,7 +281,7 @@ async fn test_create_track_requires_organizer() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("POST")
@@ -325,7 +325,7 @@ async fn test_list_tracks_for_conference() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")
@@ -362,7 +362,7 @@ async fn test_update_track() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("PUT")
@@ -405,7 +405,7 @@ async fn test_delete_track() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("DELETE")
@@ -443,7 +443,7 @@ async fn test_create_schedule_slot() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("POST")
@@ -487,7 +487,7 @@ async fn test_create_schedule_slot_requires_organizer() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("POST")
@@ -559,7 +559,7 @@ async fn test_assign_talk_to_slot() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("PUT")
@@ -624,7 +624,7 @@ async fn test_unassign_talk_from_slot() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("DELETE")
@@ -683,7 +683,7 @@ async fn test_get_conference_schedule() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")
@@ -728,7 +728,7 @@ async fn test_delete_schedule_slot() {
     )
     .await;
 
-    let token = generate_test_token(organizer_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, organizer_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("DELETE")

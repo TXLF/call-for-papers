@@ -243,7 +243,7 @@ async fn test_protected_route_with_valid_token() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")
@@ -295,7 +295,7 @@ async fn test_organizer_route_requires_organizer_role() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "user@example.com", false);
+    let token = generate_test_token(&ctx.db, user_id, "user@example.com", false).await;
 
     let req = Request::builder()
         .method("GET")
@@ -327,7 +327,7 @@ async fn test_organizer_route_with_organizer_role() {
     )
     .await;
 
-    let token = generate_test_token(user_id, "organizer@example.com", true);
+    let token = generate_test_token(&ctx.db, user_id, "organizer@example.com", true).await;
 
     let req = Request::builder()
         .method("GET")
