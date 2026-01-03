@@ -90,7 +90,7 @@ jobs:
           cd ../../..
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_name }}.tar.gz
@@ -142,7 +142,7 @@ jobs:
           echo "deb_name=$(basename $DEB_FILE)" >> $GITHUB_OUTPUT
 
       - name: Upload deb artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: debian-package
           path: ${{ steps.find_deb.outputs.deb_file }}
@@ -186,7 +186,7 @@ jobs:
           cd ..
 
       - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: frontend-dist
           path: frontend-dist.tar.gz
