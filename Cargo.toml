@@ -38,7 +38,7 @@ argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.2", features = ["rust_crypto"] }
 rand = "0.9"
 oauth2 = { version = "5.0", features = ["reqwest"] }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.13", features = ["json"] }
 
 # Email
 lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder", "hostname"] }
